@@ -1,0 +1,207 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  framework   String   @default("custom") // 'kalbach', 'patton', 'covert', 'custom'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entities     Entity[]
+  connections  LayerConnection[]
+  snapshots    ProjectSnapshot[]
+  conflicts    ConflictResolution[]
+
+  @@map("projects")
+}
+
+model Entity {
+  id          String      @id @default(cuid())
+  projectId   String      @map("project_id")
+  type        String      // 'user_job', 'business_objective', etc.
+  layer       Int
+  title       String
+  description String?
+  data        Json        // type-specific fields
+  positionX   Int         @map("position_x")
+  positionY   Int         @map("position_y")
+  tags        Json        @default("[]")
+  status      EntityStatus @default(ACTIVE)
+  version     Int         @default(1)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Connections
+  fromConnections LayerConnection[] @relation("FromEntity")
+  toConnections   LayerConnection[] @relation("ToEntity")
+  
+  // Reconciliation
+  reconciliationStatus ReconciliationStatus?
+  
+  // Change events
+  changeEvents ChangeEvent[]
+  triggeredReconciliations ReconciliationStatus[] @relation("TriggeredBy")
+
+  @@map("entities")
+}
+
+model LayerConnection {
+  id             String           @id @default(cuid())
+  projectId      String           @map("project_id")
+  fromEntityId   String           @map("from_entity_id")
+  toEntityId     String           @map("to_entity_id")
+  fromLayer      Int              @map("from_layer")
+  toLayer        Int              @map("to_layer")
+  connectionType ConnectionType   @map("connection_type")
+  strength       ConnectionStrength @default(MEDIUM)
+  rationale      String?
+  createdAt      DateTime         @default(now()) @map("created_at")
+  createdBy      String           @map("created_by")
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fromEntity Entity  @relation("FromEntity", fields: [fromEntityId], references: [id], onDelete: Cascade)
+  toEntity   Entity  @relation("ToEntity", fields: [toEntityId], references: [id], onDelete: Cascade)
+
+  @@map("layer_connections")
+}
+
+model ReconciliationStatus {
+  entityId     String              @id @map("entity_id")
+  state        ReconciliationState @default(SYNCED)
+  triggeredBy  String?             @map("triggered_by")
+  triggeredAt  DateTime            @default(now()) @map("triggered_at")
+  reason       String
+  reviewedBy   String?             @map("reviewed_by")
+  reviewedAt   DateTime?           @map("reviewed_at")
+  notes        String?
+
+  entity          Entity  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  triggeredByEntity Entity? @relation("TriggeredBy", fields: [triggeredBy], references: [id])
+
+  @@map("reconciliation_status")
+}
+
+model ChangeEvent {
+  id            String      @id @default(cuid())
+  entityId      String      @map("entity_id")
+  entityType    String      @map("entity_type")
+  changeType    ChangeType  @map("change_type")
+  changedFields Json        @default("[]") @map("changed_fields")
+  oldValues     Json?       @map("old_values")
+  newValues     Json?       @map("new_values")
+  timestamp     DateTime    @default(now())
+  userId        String      @map("user_id")
+  batchId       String?     @map("batch_id")
+
+  entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  impactAnalysis ImpactAnalysis?
+
+  @@map("change_events")
+}
+
+model ImpactAnalysis {
+  changeEventId      String   @id @map("change_event_id")
+  affectedEntities   Json     @map("affected_entities") // array of affected entity info
+  analysisTimestamp  DateTime @default(now()) @map("analysis_timestamp")
+  processed          Boolean  @default(false)
+
+  changeEvent ChangeEvent @relation(fields: [changeEventId], references: [id], onDelete: Cascade)
+
+  @@map("impact_analyses")
+}
+
+model ConflictResolution {
+  id                  String         @id @default(cuid())
+  projectId           String         @map("project_id")
+  entityIds           Json           @default("[]") @map("entity_ids")
+  conflictType        ConflictType   @map("conflict_type")
+  description         String
+  proposedResolution  String?        @map("proposed_resolution")
+  status              ConflictStatus @default(OPEN)
+  assignedTo          String?        @map("assigned_to")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  resolvedAt          DateTime?      @map("resolved_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("conflict_resolutions")
+}
+
+model ProjectSnapshot {
+  id                   String   @id @default(cuid())
+  projectId            String   @map("project_id")
+  commitHash           String?  @map("commit_hash")
+  message              String
+  createdBy            String   @map("created_by")
+  createdAt            DateTime @default(now()) @map("created_at")
+  entitiesSnapshot     Json     @map("entities_snapshot")
+  connectionsSnapshot  Json     @map("connections_snapshot")
+  metadata             Json
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_snapshots")
+}
+
+// Enums
+enum EntityStatus {
+  ACTIVE
+  ARCHIVED
+  DRAFT
+}
+
+enum ConnectionType {
+  SUPPORTS
+  DERIVES_FROM
+  CONFLICTS_WITH
+  INFORMS
+}
+
+enum ConnectionStrength {
+  STRONG
+  MEDIUM
+  WEAK
+}
+
+enum ReconciliationState {
+  SYNCED
+  NEEDS_ATTENTION
+  DOWNSTREAM_IMPACT
+  CONFLICTED
+  PENDING_REVIEW
+  RECONCILED
+}
+
+enum ChangeType {
+  CREATE
+  UPDATE
+  DELETE
+  ARCHIVE
+}
+
+enum ConflictType {
+  BUSINESS_VS_USER
+  CONSTRAINT_VIOLATION
+  DEPENDENCY_CYCLE
+  PRIORITY_MISMATCH
+}
+
+enum ConflictStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  ACCEPTED_RISK
+}
