@@ -15,42 +15,36 @@ interface EntityEditorProps {
 export function EntityEditor({ entity, isOpen, onClose, onSave, onDelete }: EntityEditorProps) {
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
-    tags: [] as string[],
-    data: {} as any
+    type: '',
+    // TODO: Uncomment these fields later when we need them
+    // description: '',
+    // tags: [] as string[],
+    // data: {} as any
   })
 
   useEffect(() => {
     if (entity) {
-      // Parse tags safely
-      let tags: string[] = []
-      try {
-        if (typeof entity.tags === 'string') {
-          tags = JSON.parse(entity.tags)
-        } else if (Array.isArray(entity.tags)) {
-          tags = entity.tags
-        }
-      } catch {
-        tags = []
-      }
-
       setFormData({
         title: entity.title || '',
-        description: entity.description || '',
-        tags,
-        data: entity.data || {}
+        type: entity.type || 'entity',
+        // TODO: Uncomment these fields later when we need them
+        // description: entity.description || '',
+        // tags,
+        // data: entity.data || {}
       })
     }
   }, [entity])
 
   const handleSave = () => {
     if (!entity) return
-    
+
     onSave(entity.id, {
       title: formData.title,
-      description: formData.description,
-      tags: formData.tags,
-      data: formData.data
+      type: formData.type,
+      // TODO: Uncomment these fields later when we need them
+      // description: formData.description,
+      // tags: formData.tags,
+      // data: formData.data
     })
     onClose()
   }
@@ -63,168 +57,58 @@ export function EntityEditor({ entity, isOpen, onClose, onSave, onDelete }: Enti
     }
   }
 
-  const handleTagsChange = (tagsString: string) => {
-    const tags = tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-    setFormData(prev => ({ ...prev, tags }))
-  }
+  // TODO: Uncomment these helper functions later when we need them
+  // const handleTagsChange = (tagsString: string) => {
+  //   const tags = tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+  //   setFormData(prev => ({ ...prev, tags }))
+  // }
 
-  const handleDataChange = (key: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      data: { ...prev.data, [key]: value }
-    }))
-  }
+  // const handleDataChange = (key: string, value: any) => {
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     data: { ...prev.data, [key]: value }
+  //   }))
+  // }
 
-  const renderDataFields = () => {
-    if (!entity) return null
-
-    switch (entity.type) {
-      case 'user_job':
-        return (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Job Type
-              </label>
-              <select
-                value={formData.data.type || 'functional'}
-                onChange={(e) => handleDataChange('type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="functional">Functional</option>
-                <option value="emotional">Emotional</option>
-                <option value="social">Social</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Job Statement
-              </label>
-              <textarea
-                value={formData.data.jobStatement || ''}
-                onChange={(e) => handleDataChange('jobStatement', e.target.value)}
-                placeholder="When I [situation], I want to [motivation], so I can [expected outcome]"
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                User Segment
-              </label>
-              <input
-                type="text"
-                value={formData.data.userSegment || ''}
-                onChange={(e) => handleDataChange('userSegment', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </>
-        )
-
-      case 'business_objective':
-        return (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category
-              </label>
-              <select
-                value={formData.data.category || 'revenue'}
-                onChange={(e) => handleDataChange('category', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="revenue">Revenue</option>
-                <option value="cost">Cost</option>
-                <option value="risk">Risk</option>
-                <option value="experience">Experience</option>
-                <option value="operational">Operational</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Metric
-              </label>
-              <input
-                type="text"
-                value={formData.data.metric || ''}
-                onChange={(e) => handleDataChange('metric', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Stakeholder
-              </label>
-              <input
-                type="text"
-                value={formData.data.stakeholder || ''}
-                onChange={(e) => handleDataChange('stakeholder', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </>
-        )
-
-      case 'functional_spec':
-        return (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Spec Type
-              </label>
-              <select
-                value={formData.data.specType || 'feature'}
-                onChange={(e) => handleDataChange('specType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="feature">Feature</option>
-                <option value="capability">Capability</option>
-                <option value="integration">Integration</option>
-                <option value="constraint">Constraint</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Priority
-              </label>
-              <select
-                value={formData.data.priority || 'should-have'}
-                onChange={(e) => handleDataChange('priority', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="must-have">Must Have</option>
-                <option value="should-have">Should Have</option>
-                <option value="could-have">Could Have</option>
-                <option value="wont-have">Won't Have</option>
-              </select>
-            </div>
-          </>
-        )
-
+  const getEntityTypeOptions = (layer: number) => {
+    switch (layer) {
+      case 1:
+        return [
+          { value: 'entity', label: 'Generic Entity' },
+          { value: 'user_job', label: 'User Job' },
+          { value: 'business_objective', label: 'Business Objective' },
+          { value: 'secondary_consideration', label: 'Secondary Consideration' }
+        ]
+      case 2:
+        return [
+          { value: 'entity', label: 'Generic Entity' },
+          { value: 'functional_spec', label: 'Functional Spec' },
+          { value: 'content_requirement', label: 'Content Requirement' },
+          { value: 'system_requirement', label: 'System Requirement' }
+        ]
+      case 3:
+        return [
+          { value: 'entity', label: 'Generic Entity' },
+          { value: 'interaction_spec', label: 'Interaction Spec' },
+          { value: 'information_architecture', label: 'Information Architecture' }
+        ]
+      case 4:
+        return [
+          { value: 'entity', label: 'Generic Entity' },
+          { value: 'interface_element', label: 'Interface Element' },
+          { value: 'navigation_design', label: 'Navigation Design' }
+        ]
       default:
-        return (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Additional Data (JSON)
-            </label>
-            <textarea
-              value={JSON.stringify(formData.data, null, 2)}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value)
-                  setFormData(prev => ({ ...prev, data: parsed }))
-                } catch {
-                  // Invalid JSON, don't update
-                }
-              }}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            />
-          </div>
-        )
+        return [{ value: 'entity', label: 'Generic Entity' }]
     }
   }
+
+  // TODO: Uncomment this function later when we need the detailed entity fields
+  // const renderDataFields = () => {
+  //   if (!entity) return null
+  //   // [Previous field rendering logic will go here]
+  //   return null
+  // }
 
   if (!isOpen || !entity) return null
 
@@ -253,9 +137,29 @@ export function EntityEditor({ entity, isOpen, onClose, onSave, onDelete }: Enti
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter entity title..."
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Entity Type
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {getEntityTypeOptions(entity.layer).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* TODO: Uncomment these fields later when we need them */}
+          {/*
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
@@ -282,6 +186,7 @@ export function EntityEditor({ entity, isOpen, onClose, onSave, onDelete }: Enti
           </div>
 
           {renderDataFields()}
+          */}
         </div>
 
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">

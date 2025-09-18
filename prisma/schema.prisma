@@ -14,7 +14,6 @@ model Project {
   id          String   @id @default(cuid())
   name        String
   description String?
-  framework   String   @default("custom") // 'kalbach', 'patton', 'covert', 'custom'
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

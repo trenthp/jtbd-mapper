@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createProject, getAllProjects } from '@/lib/api/projects'
+import { createProject, getAllProjects, deleteProject } from '@/lib/api/projects'
 
 export async function GET() {
   try {
@@ -17,7 +17,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, description, framework } = body
+    const { name, description } = body
 
     if (!name) {
       return NextResponse.json(
@@ -26,19 +26,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate framework if provided
-    const validFrameworks = ['kalbach', 'patton', 'covert', 'custom']
-    if (framework && !validFrameworks.includes(framework)) {
-      return NextResponse.json(
-        { error: 'Invalid framework. Must be one of: kalbach, patton, covert, custom' },
-        { status: 400 }
-      )
-    }
-
     const project = await createProject({
       name,
-      description,
-      framework: framework || 'custom'
+      description
     })
 
     return NextResponse.json({ project }, { status: 201 })

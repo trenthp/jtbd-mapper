@@ -23,9 +23,11 @@ export function InlineEntityEditor({
 }: InlineEntityEditorProps) {
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
-    tags: [] as string[],
-    data: {} as any
+    type: '',
+    // TODO: Uncomment these fields later when we need them
+    // description: '',
+    // tags: [] as string[],
+    // data: {} as any
   })
   const [isSaving, setIsSaving] = useState(false)
   
@@ -33,23 +35,13 @@ export function InlineEntityEditor({
 
   useEffect(() => {
     if (entity) {
-      // Parse tags safely
-      let tags: string[] = []
-      try {
-        if (typeof entity.tags === 'string') {
-          tags = JSON.parse(entity.tags)
-        } else if (Array.isArray(entity.tags)) {
-          tags = entity.tags
-        }
-      } catch {
-        tags = []
-      }
-
       setFormData({
         title: entity.title || '',
-        description: entity.description || '',
-        tags,
-        data: entity.data || {}
+        type: entity.type || 'entity',
+        // TODO: Uncomment these fields later when we need them
+        // description: entity.description || '',
+        // tags,
+        // data: entity.data || {}
       })
     }
   }, [entity])
@@ -72,9 +64,11 @@ export function InlineEntityEditor({
     try {
       await onSave(entity.id, {
         title: formData.title,
-        description: formData.description,
-        tags: formData.tags,
-        data: formData.data
+        type: formData.type,
+        // TODO: Uncomment these fields later when we need them
+        // description: formData.description,
+        // tags: formData.tags,
+        // data: formData.data
       })
       onClose()
     } finally {
@@ -90,16 +84,50 @@ export function InlineEntityEditor({
     }
   }
 
-  const handleTagsChange = (tagsString: string) => {
-    const tags = tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-    setFormData(prev => ({ ...prev, tags }))
-  }
+  // TODO: Uncomment these helper functions later when we need them
+  // const handleTagsChange = (tagsString: string) => {
+  //   const tags = tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+  //   setFormData(prev => ({ ...prev, tags }))
+  // }
 
-  const handleDataChange = (key: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      data: { ...prev.data, [key]: value }
-    }))
+  // const handleDataChange = (key: string, value: any) => {
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     data: { ...prev.data, [key]: value }
+  //   }))
+  // }
+
+  const getEntityTypeOptions = (layer: number) => {
+    switch (layer) {
+      case 1:
+        return [
+          { value: 'entity', label: 'Generic Entity' },
+          { value: 'user_job', label: 'User Job' },
+          { value: 'business_objective', label: 'Business Objective' },
+          { value: 'secondary_consideration', label: 'Secondary Consideration' }
+        ]
+      case 2:
+        return [
+          { value: 'entity', label: 'Generic Entity' },
+          { value: 'functional_spec', label: 'Functional Spec' },
+          { value: 'content_requirement', label: 'Content Requirement' },
+          { value: 'system_requirement', label: 'System Requirement' }
+        ]
+      case 3:
+        return [
+          { value: 'entity', label: 'Generic Entity' },
+          { value: 'interaction_spec', label: 'Interaction Spec' },
+          { value: 'information_architecture', label: 'Information Architecture' }
+        ]
+      case 4:
+        return [
+          { value: 'entity', label: 'Generic Entity' },
+          { value: 'interface_element', label: 'Interface Element' },
+          { value: 'navigation_design', label: 'Navigation Design' }
+        ]
+      default:
+        return [{ value: 'entity', label: 'Generic Entity' }]
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -110,99 +138,12 @@ export function InlineEntityEditor({
     }
   }
 
-  const renderDataFields = () => {
-    if (!entity) return null
-
-    switch (entity.type) {
-      case 'user_job':
-        return (
-          <>
-            <div>
-              <label className="block text-xs font-semibold text-gray-800 mb-1">
-                Job Type
-              </label>
-              <select
-                value={formData.data.type || 'functional'}
-                onChange={(e) => handleDataChange('type', e.target.value)}
-                className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <option value="functional">Functional</option>
-                <option value="emotional">Emotional</option>
-                <option value="social">Social</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-800 mb-1">
-                User Segment
-              </label>
-              <input
-                type="text"
-                value={formData.data.userSegment || ''}
-                onChange={(e) => handleDataChange('userSegment', e.target.value)}
-                className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              />
-            </div>
-          </>
-        )
-
-      case 'business_objective':
-        return (
-          <>
-            <div>
-              <label className="block text-xs font-semibold text-gray-800 mb-1">
-                Category
-              </label>
-              <select
-                value={formData.data.category || 'revenue'}
-                onChange={(e) => handleDataChange('category', e.target.value)}
-                className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <option value="revenue">Revenue</option>
-                <option value="cost">Cost</option>
-                <option value="risk">Risk</option>
-                <option value="experience">Experience</option>
-                <option value="operational">Operational</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-800 mb-1">
-                Stakeholder
-              </label>
-              <input
-                type="text"
-                value={formData.data.stakeholder || ''}
-                onChange={(e) => handleDataChange('stakeholder', e.target.value)}
-                className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              />
-            </div>
-          </>
-        )
-
-      case 'functional_spec':
-        return (
-          <>
-            <div>
-              <label className="block text-xs font-semibold text-gray-800 mb-1">
-                Priority
-              </label>
-              <select
-                value={formData.data.priority || 'should-have'}
-                onChange={(e) => handleDataChange('priority', e.target.value)}
-                className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <option value="must-have">Must Have</option>
-                <option value="should-have">Should Have</option>
-                <option value="could-have">Could Have</option>
-                <option value="wont-have">Won't Have</option>
-              </select>
-            </div>
-          </>
-        )
-
-      default:
-        return null
-    }
-  }
+  // TODO: Uncomment this function later when we need the detailed entity fields
+  // const renderDataFields = () => {
+  //   if (!entity) return null
+  //   // [Previous field rendering logic will go here]
+  //   return null
+  // }
 
   if (!isOpen || !entity) return null
 
@@ -249,6 +190,25 @@ export function InlineEntityEditor({
 
         <div>
           <label className="block text-xs font-semibold text-gray-800 mb-1">
+            Entity Type
+          </label>
+          <select
+            value={formData.type}
+            onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+            className="w-full px-3 py-2 text-sm text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          >
+            {getEntityTypeOptions(entity.layer).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* TODO: Uncomment these fields later when we need them */}
+        {/*
+        <div>
+          <label className="block text-xs font-semibold text-gray-800 mb-1">
             Description
           </label>
           <textarea
@@ -274,6 +234,7 @@ export function InlineEntityEditor({
         </div>
 
         {renderDataFields()}
+        */}
       </div>
 
       <div className="flex items-center justify-between mt-4 pt-2 border-t border-gray-200">

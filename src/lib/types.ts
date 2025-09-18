@@ -160,10 +160,43 @@ export interface SelectionState {
   selectedConnections: Set<string>
 }
 
+export interface RectangleSelection {
+  isActive: boolean
+  startPosition?: Position
+  currentPosition?: Position
+}
+
+export interface SnapGuide {
+  id: string
+  type: 'horizontal' | 'vertical'
+  position: number
+  entities: string[] // Entity IDs that create this guide
+}
+
+export interface SnappingState {
+  isEnabled: boolean
+  snapDistance: number
+  activeGuides: SnapGuide[]
+  snapPosition?: Position
+}
+
+export interface GridSettings {
+  isVisible: boolean
+  snapToGrid: boolean
+  gridSize: number
+  gridColor: string
+  gridOpacity: number
+}
+
 export interface ConnectionMode {
   isActive: boolean
   fromEntityId?: string
   previewPosition?: Position
+}
+
+export interface CanvasTool {
+  type: 'select' | 'pan' | 'connect'
+  cursor: string
 }
 
 // Event types
@@ -198,7 +231,7 @@ export interface EntityStore {
   entities: Map<string, EntityWithRelations>
   connections: Map<string, LayerConnectionWithEntities>
   reconciliationStates: Map<string, ReconciliationStatus>
-  
+
   // Actions
   addEntity: (entity: EntityWithRelations) => void
   updateEntity: (entityId: string, changes: Partial<Entity>) => void
@@ -207,6 +240,17 @@ export interface EntityStore {
   updateConnection: (connectionId: string, changes: Partial<LayerConnection>) => void
   removeConnection: (connectionId: string) => void
   setReconciliationState: (entityId: string, state: ReconciliationStatus) => void
+
+  // Bulk operations
+  removeEntities: (entityIds: string[]) => void
+  removeConnections: (connectionIds: string[]) => void
+  duplicateEntity: (entityId: string, offset?: { x: number; y: number }) => EntityWithRelations | null
+
+  // Helper methods
+  getEntitiesByLayer: (layer: number) => EntityWithRelations[]
+  getConnectionsForEntity: (entityId: string) => LayerConnectionWithEntities[]
+  getReconciliationState: (entityId: string) => ReconciliationStatus | undefined
+  cleanupTemporaryEntities: () => void
 }
 
 export interface CanvasStore {
@@ -214,12 +258,32 @@ export interface CanvasStore {
   dragState: DragState
   selectionState: SelectionState
   connectionMode: ConnectionMode
+  rectangleSelection: RectangleSelection
+  snappingState: SnappingState
+  gridSettings: GridSettings
+  currentTool: CanvasTool
+  isPanMode: boolean
   currentLayer: number
-  
+
   // Actions
   setViewport: (viewport: Partial<Viewport>) => void
   setDragState: (dragState: Partial<DragState>) => void
   setSelectionState: (selectionState: Partial<SelectionState>) => void
   setConnectionMode: (connectionMode: Partial<ConnectionMode>) => void
+  setRectangleSelection: (rectangleSelection: Partial<RectangleSelection>) => void
+  setSnappingState: (snappingState: Partial<SnappingState>) => void
+  setGridSettings: (gridSettings: Partial<GridSettings>) => void
+  setCurrentTool: (tool: CanvasTool) => void
+  setIsPanMode: (isPanMode: boolean) => void
   setCurrentLayer: (layer: number) => void
+
+  // Selection helpers
+  selectEntity: (entityId: string, multiSelect?: boolean) => void
+  selectConnection: (connectionId: string, multiSelect?: boolean) => void
+  clearSelection: () => void
+  selectEntitiesInRectangle: (rect: { x: number, y: number, width: number, height: number }) => void
+
+  // Navigation helpers
+  panTo: (x: number, y: number) => void
+  zoomToFit: (entities: Array<{ positionX: number; positionY: number }>) => void
 }

@@ -17,9 +17,10 @@ export function ProjectsGrid() {
     try {
       const response = await fetch('/api/projects')
       const data = await response.json()
-      setProjects(data.projects)
+      setProjects(data.projects || [])
     } catch (error) {
       console.error('Error fetching projects:', error)
+      setProjects([])
     } finally {
       setLoading(false)
     }
@@ -33,18 +34,6 @@ export function ProjectsGrid() {
     })
   }
 
-  const getFrameworkLabel = (framework: string) => {
-    switch (framework) {
-      case 'kalbach':
-        return 'Kalbach Jobs Mapping'
-      case 'patton':
-        return 'Patton Story Mapping'
-      case 'covert':
-        return 'Covert Taxonomy'
-      default:
-        return 'Custom Framework'
-    }
-  }
 
   if (loading) {
     return (
@@ -64,7 +53,7 @@ export function ProjectsGrid() {
     )
   }
 
-  if (projects.length === 0) {
+  if (!projects || projects.length === 0) {
     return (
       <div className="bg-white rounded-lg p-12 text-center shadow-sm">
         <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -87,13 +76,10 @@ export function ProjectsGrid() {
       {projects.map((project) => (
         <Link key={project.id} href={`/projects/${project.id}`}>
           <div className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer border hover:border-blue-200">
-            <div className="flex items-start justify-between mb-3">
+            <div className="mb-3">
               <h3 className="font-semibold text-gray-900 text-lg leading-tight">
                 {project.name}
               </h3>
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                {getFrameworkLabel(project.framework)}
-              </span>
             </div>
             
             {project.description && (

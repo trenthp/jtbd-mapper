@@ -101,6 +101,68 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
 
   getReconciliationState: (entityId: string) => {
     return get().reconciliationStates.get(entityId)
+  },
+
+  // Bulk operations for keyboard shortcuts
+  removeEntities: (entityIds: string[]) => {
+    set((state) => {
+      const newEntities = new Map(state.entities)
+      const newConnections = new Map(state.connections)
+      const newReconciliationStates = new Map(state.reconciliationStates)
+
+      // Remove entities
+      entityIds.forEach(entityId => {
+        newEntities.delete(entityId)
+        newReconciliationStates.delete(entityId)
+      })
+
+      // Remove related connections
+      Array.from(newConnections.values()).forEach(connection => {
+        if (entityIds.includes(connection.fromEntityId) || entityIds.includes(connection.toEntityId)) {
+          newConnections.delete(connection.id)
+        }
+      })
+
+      return {
+        entities: newEntities,
+        connections: newConnections,
+        reconciliationStates: newReconciliationStates
+      }
+    })
+  },
+
+  removeConnections: (connectionIds: string[]) => {
+    set((state) => {
+      const newConnections = new Map(state.connections)
+      connectionIds.forEach(connectionId => {
+        newConnections.delete(connectionId)
+      })
+      return { connections: newConnections }
+    })
+  },
+
+  duplicateEntity: (entityId: string, offset: { x: number; y: number } = { x: 20, y: 20 }) => {
+    // This method is deprecated - use the clipboard duplicate function instead
+    console.warn('entityStore.duplicateEntity is deprecated, use useClipboard().duplicate instead')
+    return null
+  },
+
+  // Clean up temporary entities
+  cleanupTemporaryEntities: () => {
+    set((state) => {
+      const newEntities = new Map(state.entities)
+      const toRemove: string[] = []
+
+      newEntities.forEach((entity, id) => {
+        if (id.includes('-copy-') || id.includes('paste-')) {
+          toRemove.push(id)
+        }
+      })
+
+      toRemove.forEach(id => newEntities.delete(id))
+
+      return { entities: newEntities }
+    })
   }
 }))
 

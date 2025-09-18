@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { CanvasStore, Viewport, DragState, SelectionState, ConnectionMode } from '@/lib/types'
+import { CanvasStore, Viewport, DragState, SelectionState, ConnectionMode, RectangleSelection, SnappingState, GridSettings, CanvasTool } from '@/lib/types'
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
   viewport: {
@@ -7,20 +7,46 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     y: 0,
     zoom: 1
   },
-  
+
   dragState: {
     isDragging: false
   },
-  
+
   selectionState: {
     selectedEntities: new Set(),
     selectedConnections: new Set()
   },
-  
+
   connectionMode: {
     isActive: false
   },
-  
+
+  rectangleSelection: {
+    isActive: false
+  },
+
+  snappingState: {
+    isEnabled: true,
+    snapDistance: 10,
+    activeGuides: [],
+    snapPosition: undefined
+  },
+
+  gridSettings: {
+    isVisible: true,
+    snapToGrid: false,
+    gridSize: 20,
+    gridColor: '#e5e7eb',
+    gridOpacity: 0.5
+  },
+
+  currentTool: {
+    type: 'select',
+    cursor: 'default'
+  },
+
+  isPanMode: false,
+
   currentLayer: 1,
 
   setViewport: (viewport: Partial<Viewport>) => {
@@ -47,6 +73,32 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }))
   },
 
+  setRectangleSelection: (rectangleSelection: Partial<RectangleSelection>) => {
+    set((state) => ({
+      rectangleSelection: { ...state.rectangleSelection, ...rectangleSelection }
+    }))
+  },
+
+  setSnappingState: (snappingState: Partial<SnappingState>) => {
+    set((state) => ({
+      snappingState: { ...state.snappingState, ...snappingState }
+    }))
+  },
+
+  setGridSettings: (gridSettings: Partial<GridSettings>) => {
+    set((state) => ({
+      gridSettings: { ...state.gridSettings, ...gridSettings }
+    }))
+  },
+
+  setCurrentTool: (tool: CanvasTool) => {
+    set(() => ({ currentTool: tool }))
+  },
+
+  setIsPanMode: (isPanMode: boolean) => {
+    set(() => ({ isPanMode }))
+  },
+
   setCurrentLayer: (layer: number) => {
     set(() => ({ currentLayer: layer }))
   },
@@ -54,16 +106,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   // Helper methods
   selectEntity: (entityId: string, multiSelect = false) => {
     set((state) => {
-      const newSelectedEntities = multiSelect 
+      const newSelectedEntities = multiSelect
         ? new Set(state.selectionState.selectedEntities)
         : new Set<string>()
-      
+
       if (newSelectedEntities.has(entityId)) {
         newSelectedEntities.delete(entityId)
       } else {
         newSelectedEntities.add(entityId)
       }
-      
+
       return {
         selectionState: {
           ...state.selectionState,
@@ -76,16 +128,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   selectConnection: (connectionId: string, multiSelect = false) => {
     set((state) => {
-      const newSelectedConnections = multiSelect 
+      const newSelectedConnections = multiSelect
         ? new Set(state.selectionState.selectedConnections)
         : new Set<string>()
-      
+
       if (newSelectedConnections.has(connectionId)) {
         newSelectedConnections.delete(connectionId)
       } else {
         newSelectedConnections.add(connectionId)
       }
-      
+
       return {
         selectionState: {
           ...state.selectionState,
@@ -104,6 +156,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         selectedConnections: new Set()
       }
     }))
+  },
+
+  selectEntitiesInRectangle: (rect: { x: number, y: number, width: number, height: number }) => {
+    // This will be called with entities from the LayerCanvas component
+    // The actual entity filtering logic will be in the LayerCanvas
+    // This method exists to satisfy the interface - implementation will be in canvas component
   },
 
   panTo: (x: number, y: number) => {
@@ -126,7 +184,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
     const width = maxX - minX + 400 // padding
     const height = maxY - minY + 400 // padding
-    
+
     const scaleX = window.innerWidth / width
     const scaleY = window.innerHeight / height
     const scale = Math.min(scaleX, scaleY, 1) // don't zoom in beyond 1x

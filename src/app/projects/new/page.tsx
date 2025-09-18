@@ -10,16 +10,8 @@ export default function NewProjectPage() {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    framework: 'custom'
+    description: ''
   })
-
-  const frameworks = [
-    { value: 'custom', label: 'Custom Framework', description: 'Define your own mapping approach' },
-    { value: 'kalbach', label: 'Kalbach Jobs Mapping', description: 'Job mapping framework by Jim Kalbach' },
-    { value: 'patton', label: 'Patton Story Mapping', description: 'Story mapping approach by Jeff Patton' },
-    { value: 'covert', label: 'Covert Taxonomy', description: 'Information architecture by Abby Covert' }
-  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,35 +96,6 @@ export default function NewProjectPage() {
               />
             </div>
 
-            {/* Framework */}
-            <div>
-              <label htmlFor="framework" className="block text-sm font-medium text-gray-700 mb-2">
-                Framework Approach
-              </label>
-              <div className="space-y-3">
-                {frameworks.map((framework) => (
-                  <div key={framework.value} className="flex items-start">
-                    <div className="flex items-center h-5">
-                      <input
-                        type="radio"
-                        id={framework.value}
-                        name="framework"
-                        value={framework.value}
-                        checked={formData.framework === framework.value}
-                        onChange={handleInputChange}
-                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                      />
-                    </div>
-                    <div className="ml-3">
-                      <label htmlFor={framework.value} className="font-medium text-gray-700">
-                        {framework.label}
-                      </label>
-                      <p className="text-sm text-gray-500">{framework.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Form Actions */}
             <div className="flex items-center justify-between pt-6 border-t border-gray-200">

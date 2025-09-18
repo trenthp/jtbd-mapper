@@ -4,13 +4,9 @@ import { Project } from '@prisma/client'
 export async function createProject(data: {
   name: string
   description?: string
-  framework?: string
 }): Promise<Project> {
   const project = await prisma.project.create({
-    data: {
-      ...data,
-      framework: data.framework || 'custom'
-    }
+    data
   })
 
   return project

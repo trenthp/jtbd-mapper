@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { LayerCanvas } from '@/components/Canvas/LayerCanvas'
-import { useCanvasStore } from '@/stores/canvasStore'
-import { Link2 } from 'lucide-react'
 
 interface ProjectCanvasProps {
   projectId: string
@@ -14,7 +12,6 @@ interface ProjectCanvasProps {
 
 export function ProjectCanvas({ projectId, currentLayer, onCreateConnection, onNavigateToEntity }: ProjectCanvasProps) {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
-  const { connectionMode, setConnectionMode } = useCanvasStore()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -106,47 +103,6 @@ export function ProjectCanvas({ projectId, currentLayer, onCreateConnection, onN
         onNavigateToEntity={onNavigateToEntity}
       />
       
-      {/* Canvas tools positioned below layer tabs */}
-      <div className="absolute top-80 right-6 flex flex-col gap-2 items-end z-10">
-        <div className="bg-white rounded-lg shadow-lg p-3 min-w-[160px]">
-          <div className="text-sm font-medium text-gray-700 mb-2">
-            Layer {currentLayer} View
-          </div>
-          <div className="text-xs text-gray-500 mb-2">
-            {connectionMode.isActive 
-              ? 'Click entities to connect them'
-              : 'Scroll to zoom • Drag to pan • Double-click to edit'
-            }
-          </div>
-          {/* Layer visibility indicator */}
-          <div className="text-xs text-gray-400 flex items-center gap-1">
-            {currentLayer > 1 && (
-              <span className="opacity-60">L{currentLayer - 1} below</span>
-            )}
-            {currentLayer > 1 && currentLayer < 4 && (
-              <span className="text-gray-300">•</span>
-            )}
-            {currentLayer < 4 && (
-              <span className="opacity-40">L{currentLayer + 1} above</span>
-            )}
-          </div>
-        </div>
-        
-        <button
-          onClick={() => setConnectionMode({ 
-            isActive: !connectionMode.isActive, 
-            fromEntityId: undefined 
-          })}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors min-w-[160px] justify-center ${
-            connectionMode.isActive
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <Link2 className="h-4 w-4" />
-          {connectionMode.isActive ? 'Exit Connect' : 'Connect Mode'}
-        </button>
-      </div>
     </div>
   )
 }

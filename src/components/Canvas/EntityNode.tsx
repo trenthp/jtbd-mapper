@@ -6,7 +6,7 @@ import { EntityWithRelations, EntityVisual } from '@/lib/types'
 
 interface EntityNodeProps {
   entity: EntityWithRelations
-  visual: Partial<EntityVisual> & { 
+  visual: Partial<EntityVisual> & {
     borderColor: string
     borderStyle: 'solid' | 'dashed' | 'dotted'
     opacity: number
@@ -16,6 +16,10 @@ interface EntityNodeProps {
   isDragging: boolean
   isEditing?: boolean
   isInteractable?: boolean
+  isConnectionMode?: boolean
+  isConnectionTarget?: boolean
+  onConnectionPointHover?: (entityId: string, point: string) => void
+  onConnectionPointLeave?: (entityId: string) => void
   onClick: (entityId: string, e: Konva.KonvaEventObject<MouseEvent>) => void
   onDoubleClick?: (entityId: string) => void
   onDragStart: (entityId: string) => boolean
@@ -34,6 +38,10 @@ export function EntityNode({
   isDragging,
   isEditing = false,
   isInteractable = true,
+  isConnectionMode = false,
+  isConnectionTarget = false,
+  onConnectionPointHover,
+  onConnectionPointLeave,
   onClick,
   onDoubleClick,
   onDragStart,
@@ -219,9 +227,7 @@ export function EntityNode({
         fill="#111827" // gray-900 - higher contrast
         fontStyle="bold"
         width={ENTITY_WIDTH - 16}
-        height={18}
         wrap="word"
-        ellipsis={true}
       />
       
       {/* Entity description */}
@@ -234,9 +240,7 @@ export function EntityNode({
           fontFamily="Arial"
           fill="#374151" // gray-700 - better contrast
           width={ENTITY_WIDTH - 16}
-          height={46}
           wrap="word"
-          ellipsis={true}
         />
       )}
       
@@ -269,50 +273,66 @@ export function EntityNode({
         />
       )}
       
-      {/* Connection points */}
-      <Circle
-        x={0}
-        y={ENTITY_HEIGHT / 2}
-        radius={5}
-        fill={visual.borderColor}
-        stroke="#ffffff"
-        strokeWidth={1}
-        opacity={0.8}
-        visible={isSelected || isDragging}
-      />
-      
-      <Circle
-        x={ENTITY_WIDTH}
-        y={ENTITY_HEIGHT / 2}
-        radius={5}
-        fill={visual.borderColor}
-        stroke="#ffffff"
-        strokeWidth={1}
-        opacity={0.8}
-        visible={isSelected || isDragging}
-      />
-      
-      <Circle
-        x={ENTITY_WIDTH / 2}
-        y={0}
-        radius={5}
-        fill={visual.borderColor}
-        stroke="#ffffff"
-        strokeWidth={1}
-        opacity={0.8}
-        visible={isSelected || isDragging}
-      />
-      
-      <Circle
-        x={ENTITY_WIDTH / 2}
-        y={ENTITY_HEIGHT}
-        radius={5}
-        fill={visual.borderColor}
-        stroke="#ffffff"
-        strokeWidth={1}
-        opacity={0.8}
-        visible={isSelected || isDragging}
-      />
+      {/* Connection points - enhanced for connection mode */}
+      {(isSelected || isDragging || isConnectionMode) && (
+        <>
+          {/* Left connection point */}
+          <Circle
+            x={0}
+            y={ENTITY_HEIGHT / 2}
+            radius={isConnectionMode ? 8 : 5}
+            fill={isConnectionTarget ? "#10b981" : visual.borderColor}
+            stroke="#ffffff"
+            strokeWidth={isConnectionMode ? 2 : 1}
+            opacity={isConnectionMode ? 1.0 : 0.8}
+            onMouseEnter={() => onConnectionPointHover?.(entity.id, 'left')}
+            onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
+            listening={isConnectionMode}
+          />
+
+          {/* Right connection point */}
+          <Circle
+            x={ENTITY_WIDTH}
+            y={ENTITY_HEIGHT / 2}
+            radius={isConnectionMode ? 8 : 5}
+            fill={isConnectionTarget ? "#10b981" : visual.borderColor}
+            stroke="#ffffff"
+            strokeWidth={isConnectionMode ? 2 : 1}
+            opacity={isConnectionMode ? 1.0 : 0.8}
+            onMouseEnter={() => onConnectionPointHover?.(entity.id, 'right')}
+            onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
+            listening={isConnectionMode}
+          />
+
+          {/* Top connection point */}
+          <Circle
+            x={ENTITY_WIDTH / 2}
+            y={0}
+            radius={isConnectionMode ? 8 : 5}
+            fill={isConnectionTarget ? "#10b981" : visual.borderColor}
+            stroke="#ffffff"
+            strokeWidth={isConnectionMode ? 2 : 1}
+            opacity={isConnectionMode ? 1.0 : 0.8}
+            onMouseEnter={() => onConnectionPointHover?.(entity.id, 'top')}
+            onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
+            listening={isConnectionMode}
+          />
+
+          {/* Bottom connection point */}
+          <Circle
+            x={ENTITY_WIDTH / 2}
+            y={ENTITY_HEIGHT}
+            radius={isConnectionMode ? 8 : 5}
+            fill={isConnectionTarget ? "#10b981" : visual.borderColor}
+            stroke="#ffffff"
+            strokeWidth={isConnectionMode ? 2 : 1}
+            opacity={isConnectionMode ? 1.0 : 0.8}
+            onMouseEnter={() => onConnectionPointHover?.(entity.id, 'bottom')}
+            onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
+            listening={isConnectionMode}
+          />
+        </>
+      )}
     </Group>
   )
 }
