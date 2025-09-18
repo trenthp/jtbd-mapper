@@ -48,6 +48,9 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   const [isDuplicatingDrag, setIsDuplicatingDrag] = useState(false)
   const [originalEntityPosition, setOriginalEntityPosition] = useState<{ x: number, y: number } | null>(null)
   const [groupDragOffsets, setGroupDragOffsets] = useState<Map<string, { x: number, y: number }>>(new Map())
+  const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null)
+  const [animatingLayers, setAnimatingLayers] = useState<Set<number>>(new Set())
+  const [previousLayer, setPreviousLayer] = useState<number>(layer)
   
   const {
     viewport,
@@ -330,6 +333,21 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     // This would trigger entity creation dialog
     console.log('Create new entity shortcut - implement entity creation dialog')
   }, [])
+
+  // Handle layer transitions with animation
+  useEffect(() => {
+    if (layer !== previousLayer) {
+      setAnimatingLayers(new Set([previousLayer, layer]))
+
+      // Clear animation state after transition completes
+      const timeout = setTimeout(() => {
+        setAnimatingLayers(new Set())
+        setPreviousLayer(layer)
+      }, 300) // 300ms transition duration
+
+      return () => clearTimeout(timeout)
+    }
+  }, [layer, previousLayer])
 
   // Handle spacebar pan mode
   useEffect(() => {
@@ -757,6 +775,34 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     }
   }
 
+  // Get layer background color for visual separation
+  const getLayerBackgroundColor = (layerNum: number): string => {
+    switch (layerNum) {
+      case 1:
+        return 'rgba(59, 130, 246, 0.02)' // blue
+      case 2:
+        return 'rgba(34, 197, 94, 0.02)'  // green
+      case 3:
+        return 'rgba(168, 85, 247, 0.02)' // purple
+      case 4:
+        return 'rgba(251, 146, 60, 0.02)' // orange
+      default:
+        return 'rgba(156, 163, 175, 0.02)' // gray
+    }
+  }
+
+  // Get animated opacity for layer groups during transitions
+  const getLayerOpacity = (layerNum: number): number => {
+    if (layerNum === layer) {
+      return 1.0 // Current layer is fully visible
+    } else if (animatingLayers.has(layerNum)) {
+      // During animation, use CSS transition instead of instant change
+      return 0.5 // Adjacent layers
+    } else {
+      return 0.5 // Adjacent layers
+    }
+  }
+
   // Handle rectangle selection
   const handleRectangleSelection = (startPos: { x: number, y: number }, endPos: { x: number, y: number }) => {
     const rect = {
@@ -942,6 +988,15 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     setHoveredConnectionPoint(null)
   }, [])
 
+  // Handle entity hover for visual effects
+  const handleEntityHover = useCallback((entityId: string) => {
+    setHoveredEntityId(entityId)
+  }, [])
+
+  const handleEntityHoverLeave = useCallback(() => {
+    setHoveredEntityId(null)
+  }, [])
+
   // Get connection point position
   const getConnectionPointPosition = (entity: EntityWithRelations, point: string): { x: number, y: number } => {
     const ENTITY_WIDTH = 200
@@ -1070,10 +1125,10 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     
     // Adjust opacity based on layer context
     if (layerContext === 'below') {
-      baseOpacity = 0.25
+      baseOpacity = 0.5
       baseHighlight = false
     } else if (layerContext === 'above') {
-      baseOpacity = 0.15
+      baseOpacity = 0.5
       baseHighlight = false
     }
 
@@ -1141,9 +1196,19 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
             canvasHeight={height}
           />
 
+          {/* Layer background tint for visual separation */}
+          <Rect
+            x={-viewport.x / viewport.zoom - 5000}
+            y={-viewport.y / viewport.zoom - 5000}
+            width={(width + 10000) / viewport.zoom}
+            height={(height + 10000) / viewport.zoom}
+            fill={getLayerBackgroundColor(layer)}
+            listening={false}
+          />
+
           {/* Render layer above first (furthest back) */}
           {aboveLayerEntities.length > 0 && (
-            <Group opacity={0.15}>
+            <Group opacity={getLayerOpacity(layer + 1)}>
               {/* Above layer connections */}
               {aboveLayerConnections.map(connection => (
                 <ConnectionPath
@@ -1177,7 +1242,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
           
           {/* Render layer below (middle depth) */}
           {belowLayerEntities.length > 0 && (
-            <Group opacity={0.25}>
+            <Group opacity={getLayerOpacity(layer - 1)}>
               {/* Below layer connections */}
               {belowLayerConnections.map(connection => (
                 <ConnectionPath
@@ -1256,8 +1321,11 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
               isInteractable={true} // Current layer entities are fully interactable
               isConnectionMode={connectionMode.isActive}
               isConnectionTarget={hoveredConnectionPoint?.entityId === entity.id}
+              isHovered={hoveredEntityId === entity.id}
               onConnectionPointHover={handleConnectionPointHover}
               onConnectionPointLeave={handleConnectionPointLeave}
+              onMouseEnter={handleEntityHover}
+              onMouseLeave={handleEntityHoverLeave}
               onClick={(entityId, e) => handleEntityClick(entityId, e)}
               onDoubleClick={(entityId) => handleEntityDoubleClick(entityId)}
               onDragStart={(entityId) => handleEntityDragStart(entityId)}

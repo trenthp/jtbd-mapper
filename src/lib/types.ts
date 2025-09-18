@@ -251,6 +251,7 @@ export interface EntityStore {
   getConnectionsForEntity: (entityId: string) => LayerConnectionWithEntities[]
   getReconciliationState: (entityId: string) => ReconciliationStatus | undefined
   cleanupTemporaryEntities: () => void
+  resetStore: () => void
 }
 
 export interface CanvasStore {
@@ -286,4 +287,5 @@ export interface CanvasStore {
   // Navigation helpers
   panTo: (x: number, y: number) => void
   zoomToFit: (entities: Array<{ positionX: number; positionY: number }>) => void
+  resetCanvas: () => void
 }

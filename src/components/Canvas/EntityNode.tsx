@@ -18,8 +18,11 @@ interface EntityNodeProps {
   isInteractable?: boolean
   isConnectionMode?: boolean
   isConnectionTarget?: boolean
+  isHovered?: boolean
   onConnectionPointHover?: (entityId: string, point: string) => void
   onConnectionPointLeave?: (entityId: string) => void
+  onMouseEnter?: (entityId: string) => void
+  onMouseLeave?: () => void
   onClick: (entityId: string, e: Konva.KonvaEventObject<MouseEvent>) => void
   onDoubleClick?: (entityId: string) => void
   onDragStart: (entityId: string) => boolean
@@ -40,8 +43,11 @@ export function EntityNode({
   isInteractable = true,
   isConnectionMode = false,
   isConnectionTarget = false,
+  isHovered = false,
   onConnectionPointHover,
   onConnectionPointLeave,
+  onMouseEnter,
+  onMouseLeave,
   onClick,
   onDoubleClick,
   onDragStart,
@@ -156,6 +162,8 @@ export function EntityNode({
       onDblClick={isInteractable ? () => onDoubleClick?.(entity.id) : undefined}
       onTap={isInteractable ? (e) => onClick(entity.id, e) : undefined}
       onDbltap={isInteractable ? () => onDoubleClick?.(entity.id) : undefined}
+      onMouseEnter={isInteractable ? () => onMouseEnter?.(entity.id) : undefined}
+      onMouseLeave={isInteractable ? () => onMouseLeave?.() : undefined}
       listening={isInteractable} // Disable all event listening for non-interactable entities
     >
       {/* Main entity rectangle */}
@@ -168,10 +176,16 @@ export function EntityNode({
         dash={isEditing ? [] : getDashPattern(visual.borderStyle)} // Solid border when editing
         cornerRadius={CORNER_RADIUS}
         opacity={visual.opacity}
-        shadowEnabled={isSelected || visual.highlight || isEditing}
-        shadowColor={isEditing ? "rgba(59, 130, 246, 0.4)" : "rgba(0, 0, 0, 0.3)"} // Blue glow when editing
-        shadowBlur={isEditing ? 12 : (isSelected ? 8 : 4)}
-        shadowOffset={{ x: 2, y: 2 }}
+        shadowEnabled={isSelected || visual.highlight || isEditing || isHovered}
+        shadowColor={
+          isEditing
+            ? "rgba(59, 130, 246, 0.4)"
+            : isHovered
+              ? "rgba(0, 0, 0, 0.2)"
+              : "rgba(0, 0, 0, 0.3)"
+        }
+        shadowBlur={isEditing ? 12 : (isSelected ? 8 : (isHovered ? 6 : 4))}
+        shadowOffset={isHovered ? { x: 0, y: 4 } : { x: 2, y: 2 }}
       />
       
       {/* Entity type indicator */}
@@ -202,7 +216,7 @@ export function EntityNode({
         y={12}
         radius={8}
         fill={visual.borderColor}
-        opacity={0.8}
+        opacity={0.88}
       />
       
       <Text

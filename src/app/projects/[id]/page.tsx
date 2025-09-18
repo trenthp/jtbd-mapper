@@ -35,6 +35,10 @@ export default function ProjectPage() {
 
   const fetchProjectData = useCallback(async () => {
     try {
+      // Reset stores before loading new project data
+      useEntityStore.getState().resetStore()
+      useCanvasStore.getState().resetCanvas()
+
       const [entitiesResponse, connectionsResponse] = await Promise.all([
         fetch(`/api/entities?projectId=${projectId}`),
         fetch(`/api/connections?projectId=${projectId}`)

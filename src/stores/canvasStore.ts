@@ -199,6 +199,24 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         zoom: scale
       }
     }))
+  },
+
+  // Reset canvas state for project switching
+  resetCanvas: () => {
+    set(() => ({
+      viewport: { x: 0, y: 0, zoom: 1 },
+      dragState: { isDragging: false },
+      selectionState: { selectedEntities: new Set(), selectedConnections: new Set() },
+      connectionMode: { isActive: false },
+      rectangleSelection: { isActive: false },
+      snappingState: {
+        isEnabled: true,
+        snapDistance: 10,
+        activeGuides: [],
+        snapPosition: undefined
+      },
+      currentLayer: 1
+    }))
   }
 }))
 

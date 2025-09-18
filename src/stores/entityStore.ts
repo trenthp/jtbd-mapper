@@ -163,6 +163,15 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
 
       return { entities: newEntities }
     })
+  },
+
+  // Reset store for project switching
+  resetStore: () => {
+    set(() => ({
+      entities: new Map(),
+      connections: new Map(),
+      reconciliationStates: new Map()
+    }))
   }
 }))
 
