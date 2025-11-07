@@ -6,7 +6,7 @@ export interface EntityWithRelations extends Entity {
   toConnections: LayerConnection[]
   reconciliationStatus?: ReconciliationStatus | null
   project: Project
-  tags: any // JSON field that can be string[] or string
+  tags: unknown // JSON field that can be string[] or string
 }
 
 export interface LayerConnectionWithEntities extends LayerConnection {

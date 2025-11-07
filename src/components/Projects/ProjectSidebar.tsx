@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Project } from '@prisma/client'
+import { Project, Entity } from '@prisma/client'
 import { X, Plus, User, Target, FileText, Settings, MousePointer, Layout, Navigation, Circle } from 'lucide-react'
 import { CanvasToolbar } from '@/components/Canvas/CanvasToolbar'
 import { LayerTabs } from '@/components/Projects/LayerTabs'
@@ -9,7 +9,7 @@ import { LayerTabs } from '@/components/Projects/LayerTabs'
 interface ProjectSidebarProps {
   project: Project
   currentLayer: number
-  onCreateEntity: (entityData: any) => void
+  onCreateEntity: (entityData: Partial<Entity>) => void
   onClose: () => void
   sidebarToggle?: React.ReactNode
   onLayerChange: (layer: number) => void

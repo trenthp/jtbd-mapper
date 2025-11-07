@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Project } from '@prisma/client'
+import { Project, Entity } from '@prisma/client'
 import { ProjectCanvas } from '@/components/Projects/ProjectCanvas'
 import { ProjectSidebar } from '@/components/Projects/ProjectSidebar'
 import { useEntityStore } from '@/stores/entityStore'
 import { useCanvasStore } from '@/stores/canvasStore'
+import { EntityWithRelations, LayerConnectionWithEntities } from '@/lib/types'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 
 export default function ProjectPage() {
@@ -48,11 +49,11 @@ export default function ProjectPage() {
       const connectionsData = await connectionsResponse.json()
 
       // Load data into stores
-      entitiesData.entities.forEach((entity: any) => {
+      entitiesData.entities.forEach((entity: EntityWithRelations) => {
         useEntityStore.getState().addEntity(entity)
       })
 
-      connectionsData.connections.forEach((connection: any) => {
+      connectionsData.connections.forEach((connection: LayerConnectionWithEntities) => {
         useEntityStore.getState().addConnection(connection)
       })
     } catch (error) {
@@ -72,7 +73,7 @@ export default function ProjectPage() {
     }
   }, [projectId, fetchProject, fetchProjectData])
 
-  const handleCreateEntity = async (entityData: any) => {
+  const handleCreateEntity = async (entityData: Partial<Entity>) => {
     try {
       const response = await fetch('/api/entities', {
         method: 'POST',
@@ -191,7 +192,7 @@ export default function ProjectPage() {
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Project not found</h1>
-          <p className="text-gray-600">The project you're looking for doesn't exist.</p>
+          <p className="text-gray-600">The project you&apos;re looking for doesn&apos;t exist.</p>
         </div>
       </div>
     )
@@ -291,7 +292,7 @@ export default function ProjectPage() {
             </div>
 
             <p className="text-gray-700 mb-6">
-              Are you sure you want to delete <strong>"{project.name}"</strong>?
+              Are you sure you want to delete <strong>&quot;{project.name}&quot;</strong>?
               This will permanently remove the project and all its data including entities, connections, and layers.
             </p>
 

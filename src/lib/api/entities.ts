@@ -8,7 +8,7 @@ export async function createEntity(data: {
   layer: number
   title: string
   description?: string
-  data: any
+  data: Record<string, unknown>
   positionX: number
   positionY: number
   tags?: string[]

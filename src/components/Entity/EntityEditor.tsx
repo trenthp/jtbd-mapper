@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Entity } from '@prisma/client'
 import { EntityWithRelations } from '@/lib/types'
 import { X, Save, Trash2 } from 'lucide-react'
 
@@ -8,7 +9,7 @@ interface EntityEditorProps {
   entity: EntityWithRelations | null
   isOpen: boolean
   onClose: () => void
-  onSave: (entityId: string, updates: any) => void
+  onSave: (entityId: string, updates: Partial<Entity>) => void
   onDelete: (entityId: string) => void
 }
 

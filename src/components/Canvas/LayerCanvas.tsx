@@ -11,11 +11,11 @@ import { EntityNode } from './EntityNode'
 import { ConnectionPath } from './ConnectionPath'
 import { InlineEntityEditor } from './InlineEntityEditor'
 import { CanvasGrid, snapToGrid } from './CanvasGrid'
-import { ReconciliationState } from '@prisma/client'
+import { ReconciliationState, Entity } from '@prisma/client'
 import { EntityWithRelations } from '@/lib/types'
 
 // Simple debounce function outside component to prevent recreating on every render
-function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+function debounce<T extends (...args: unknown[]) => unknown>(func: T, wait: number): T {
   let timeout: NodeJS.Timeout
   return ((...args: Parameters<T>) => {
     clearTimeout(timeout)
@@ -588,7 +588,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     return true
   }
 
-  const handleEntityDrag = (entityId: string, position: { x: number, y: number }, event?: any) => {
+  const handleEntityDrag = (entityId: string, position: { x: number, y: number }, event?: { evt?: { altKey?: boolean } }) => {
     // Check if Alt key is pressed during drag
     const isAltPressed = event?.evt?.altKey || false
 
@@ -728,7 +728,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   }
 
   // Handle entity updates
-  const handleEntitySave = async (entityId: string, updates: any) => {
+  const handleEntitySave = async (entityId: string, updates: Partial<Entity>) => {
     try {
       const currentEntity = entities.get(entityId)
       if (!currentEntity) return

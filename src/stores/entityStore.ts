@@ -195,7 +195,7 @@ export const createEntityWithDefaults = (
   version: 1
 })
 
-export const getDefaultDataForType = (type: string): any => {
+export const getDefaultDataForType = (type: string): Record<string, unknown> => {
   switch (type) {
     case 'user_job':
       return {
