@@ -6,6 +6,7 @@ import { useEntityStore } from '@/stores/entityStore'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { markReviewed } from '@/lib/commands'
 import { EntityWithRelations } from '@/lib/types'
+import { downstreamOf } from '@/lib/impact'
 
 interface ReviewPanelProps {
   onNavigateToEntity: (entityId: string) => void
@@ -39,24 +40,9 @@ export function ReviewPanel({ onNavigateToEntity }: ReviewPanelProps) {
   const selectedEntity = selectedId ? entities.get(selectedId) : undefined
   const downstream = useMemo(() => {
     if (!selectedId) return []
-    const next = new Map<string, string[]>()
-    connections.forEach(c => {
-      if (c.toLayer > c.fromLayer) next.set(c.fromEntityId, [...(next.get(c.fromEntityId) ?? []), c.toEntityId])
-      else if (c.fromLayer > c.toLayer) next.set(c.toEntityId, [...(next.get(c.toEntityId) ?? []), c.fromEntityId])
-    })
-    const seen = new Set([selectedId])
-    const out: EntityWithRelations[] = []
-    const queue = [selectedId]
-    while (queue.length) {
-      const id = queue.shift()!
-      for (const n of next.get(id) ?? []) {
-        if (seen.has(n)) continue
-        seen.add(n)
-        const e = entities.get(n)
-        if (e) { out.push(e); queue.push(n) }
-      }
-    }
-    return out
+    return downstreamOf(selectedId, Array.from(connections.values()))
+      .map(id => entities.get(id))
+      .filter((e): e is EntityWithRelations => !!e)
   }, [selectedId, connections, entities])
 
   const handleReviewed = async (entityId: string) => {
@@ -93,7 +79,7 @@ export function ReviewPanel({ onNavigateToEntity }: ReviewPanelProps) {
                     <div className="text-sm font-medium text-gray-900 truncate">{entity.title}</div>
                     <div className="text-xs text-gray-500">L{entity.layer} · {formatType(entity.type)}</div>
                     <div className="text-xs text-amber-800 mt-1">
-                      {trigger ? <>Upstream <strong>{trigger.title}</strong> changed</> : status.reason}
+                      {trigger ? <>Upstream <strong>{trigger.title}</strong> changed</> : status.reason.replace(/^"(.*)" was deleted$/, 'Connected "$1" was deleted')}
                     </div>
                   </div>
                 </div>

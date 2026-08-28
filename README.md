@@ -15,7 +15,7 @@ Entities live on one layer. Connections (`SUPPORTS`, `DERIVES_FROM`, `CONFLICTS_
 
 ## Change tracking
 
-Editing an entity's content (title, description, data, tags, status) records a `ChangeEvent` and flags every entity reachable through connections to a *higher* layer as `DOWNSTREAM_IMPACT`. Flagged entities get a dotted amber border on the canvas and appear in the sidebar's **Review** tab, where they can be jumped to or marked as reviewed. Editing a flagged entity clears its own flag. Moving entities never counts as a change. With one entity selected, the Review tab also previews what a change to it would affect.
+Editing an entity's content (title, description, data, tags, status) records a `ChangeEvent` and flags every entity reachable through connections to a *higher* layer as `DOWNSTREAM_IMPACT`. Flagged entities get a dotted amber border on the canvas and appear in the sidebar's **Review** tab, where they can be jumped to or marked as reviewed. Deleting an entity flags every entity it was directly connected to (any layer, either direction) plus its downstream set. Editing a flagged entity clears its own flag. Moving entities never counts as a change. With one entity selected, the Review tab also previews what a change to it would affect.
 
 ## Stack
 
@@ -30,6 +30,7 @@ Editing an entity's content (title, description, data, tags, status) records a `
 npm install
 npx prisma migrate dev      # creates prisma/dev.db (path is set in prisma/schema.prisma)
 npm run dev                 # http://localhost:3000
+npm test                    # vitest: pure geometry and impact-analysis helpers
 ```
 
 ## Project layout

@@ -2,34 +2,13 @@
 //
 // When an entity's content changes we record a ChangeEvent, walk the
 // connection graph to entities on higher (more concrete) layers, and flag
-// each of them DOWNSTREAM_IMPACT until someone reviews them. A
+// each of them DOWNSTREAM_IMPACT until someone reviews them. Deleting an
+// entity flags its direct neighbours and its downstream set. A
 // ReconciliationStatus row exists only while an entity is flagged; no row
 // means SYNCED.
 import { prisma } from '@/lib/prisma'
 import { Entity, Prisma, ReconciliationStatus } from '@prisma/client'
-
-/** Entity fields whose change counts as a content change (not layout). */
-export const TRACKED_FIELDS = ['title', 'description', 'data', 'tags', 'status', 'type'] as const
-export type TrackedField = (typeof TRACKED_FIELDS)[number]
-
-export function diffTrackedFields(
-  before: Entity,
-  after: Entity
-): { changed: TrackedField[]; oldValues: Record<string, unknown>; newValues: Record<string, unknown> } {
-  const changed: TrackedField[] = []
-  const oldValues: Record<string, unknown> = {}
-  const newValues: Record<string, unknown> = {}
-  for (const field of TRACKED_FIELDS) {
-    const a = JSON.stringify(before[field] ?? null)
-    const b = JSON.stringify(after[field] ?? null)
-    if (a !== b) {
-      changed.push(field)
-      oldValues[field] = before[field]
-      newValues[field] = after[field]
-    }
-  }
-  return { changed, oldValues, newValues }
-}
+import { diffTrackedFields, downstreamOf, deletionImpact } from '@/lib/impact'
 
 export type ReconciliationStatusWithEntities = ReconciliationStatus & {
   entity: Entity
@@ -38,44 +17,50 @@ export type ReconciliationStatusWithEntities = ReconciliationStatus & {
 
 const statusInclude = { entity: true, triggeredByEntity: true } as const
 
-/**
- * Entities reachable from `entityId` by following connections to strictly
- * higher layers, transitively. Returns them in BFS order (nearest first).
- */
+async function projectEdges(projectId: string) {
+  return prisma.layerConnection.findMany({
+    where: { projectId },
+    select: { fromEntityId: true, toEntityId: true, fromLayer: true, toLayer: true },
+  })
+}
+
+/** Entities in BFS order for a list of ids (ids not found are dropped). */
+async function entitiesInOrder(ids: string[]): Promise<Entity[]> {
+  if (ids.length === 0) return []
+  const rows = await prisma.entity.findMany({ where: { id: { in: ids } } })
+  const byId = new Map(rows.map(e => [e.id, e]))
+  return ids.map(id => byId.get(id)).filter((e): e is Entity => !!e)
+}
+
+/** Entities reachable from `entityId` through connections to higher layers. */
 export async function findDownstreamEntities(entityId: string): Promise<Entity[]> {
   const root = await prisma.entity.findUnique({ where: { id: entityId } })
   if (!root) return []
+  return entitiesInOrder(downstreamOf(root.id, await projectEdges(root.projectId)))
+}
 
-  const connections = await prisma.layerConnection.findMany({
-    where: { projectId: root.projectId },
-    select: { fromEntityId: true, toEntityId: true, fromLayer: true, toLayer: true },
-  })
-
-  // Adjacency restricted to edges that go "down" (to a higher layer number)
-  const next = new Map<string, string[]>()
-  for (const c of connections) {
-    if (c.toLayer > c.fromLayer) next.set(c.fromEntityId, [...(next.get(c.fromEntityId) ?? []), c.toEntityId])
-    else if (c.fromLayer > c.toLayer) next.set(c.toEntityId, [...(next.get(c.toEntityId) ?? []), c.fromEntityId])
+async function flag(
+  entityIds: string[],
+  reason: string,
+  triggeredBy: string | null
+): Promise<ReconciliationStatusWithEntities[]> {
+  const affected: ReconciliationStatusWithEntities[] = []
+  for (const entityId of entityIds) {
+    affected.push(await prisma.reconciliationStatus.upsert({
+      where: { entityId },
+      create: { entityId, state: 'DOWNSTREAM_IMPACT', triggeredBy, reason },
+      update: {
+        state: 'DOWNSTREAM_IMPACT',
+        triggeredBy,
+        triggeredAt: new Date(),
+        reason,
+        reviewedBy: null,
+        reviewedAt: null,
+      },
+      include: statusInclude,
+    }))
   }
-
-  const seen = new Set<string>([root.id])
-  const order: string[] = []
-  const queue = [root.id]
-  while (queue.length) {
-    const id = queue.shift()!
-    for (const n of next.get(id) ?? []) {
-      if (!seen.has(n)) {
-        seen.add(n)
-        order.push(n)
-        queue.push(n)
-      }
-    }
-  }
-  if (order.length === 0) return []
-
-  const entities = await prisma.entity.findMany({ where: { id: { in: order } } })
-  const byId = new Map(entities.map(e => [e.id, e]))
-  return order.map(id => byId.get(id)).filter((e): e is Entity => !!e)
+  return affected
 }
 
 /**
@@ -97,10 +82,9 @@ export async function recordEntityChange(
   const cleared = await clearStatus(after.id)
 
   const downstream = await findDownstreamEntities(after.id)
-  const fieldList = changed.join(', ')
-  const reason = `"${after.title}" changed (${fieldList})`
+  const reason = `"${after.title}" changed (${changed.join(', ')})`
 
-  const event = await prisma.changeEvent.create({
+  await prisma.changeEvent.create({
     data: {
       entityId: after.id,
       entityType: after.type,
@@ -117,32 +101,31 @@ export async function recordEntityChange(
       },
     },
   })
-  void event
 
-  const affected: ReconciliationStatusWithEntities[] = []
-  for (const entity of downstream) {
-    const status = await prisma.reconciliationStatus.upsert({
-      where: { entityId: entity.id },
-      create: {
-        entityId: entity.id,
-        state: 'DOWNSTREAM_IMPACT',
-        triggeredBy: after.id,
-        reason,
-      },
-      update: {
-        state: 'DOWNSTREAM_IMPACT',
-        triggeredBy: after.id,
-        triggeredAt: new Date(),
-        reason,
-        reviewedBy: null,
-        reviewedAt: null,
-      },
-      include: statusInclude,
-    })
-    affected.push(status)
+  return { affected: await flag(downstream.map(e => e.id), reason, after.id), cleared }
+}
+
+/**
+ * Work out what a deletion affects. Call BEFORE deleting (the connections
+ * are needed), then pass the result to `flagDeletionImpact` afterwards.
+ */
+export async function planDeletionImpact(entity: Entity): Promise<{ entityIds: string[]; reason: string }> {
+  const edges = await projectEdges(entity.projectId)
+  return {
+    entityIds: deletionImpact(entity.id, edges),
+    reason: `"${entity.title}" was deleted`,
   }
+}
 
-  return { affected, cleared }
+/**
+ * Flag the entities from `planDeletionImpact`. The deleted entity no longer
+ * exists so nothing can point at it: triggeredBy is null and the reason text
+ * carries the name. (ChangeEvent rows cascade with their entity, so the
+ * deletion itself is not stored.)
+ */
+export async function flagDeletionImpact(plan: { entityIds: string[]; reason: string }) {
+  const existing = await entitiesInOrder(plan.entityIds)
+  return flag(existing.map(e => e.id), plan.reason, null)
 }
 
 /** Remove an entity's flag. Returns true if there was one. */

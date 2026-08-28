@@ -4,6 +4,7 @@ See README.md for the product overview and layout.
 
 ## Commands
 - `npm run dev` — dev server (Webpack; Turbopack is deliberately disabled in next.config.ts)
+- `npm test` — vitest, covers `src/lib/impact.ts` and `src/lib/canvas/geometry.ts`; add tests there for any change to graph walks or snapping
 - `npm run build` / `npm run lint` — verify before committing
 - `npx prisma migrate dev` — apply schema changes; `npx prisma studio` to inspect data
 
@@ -16,6 +17,6 @@ See README.md for the product overview and layout.
 ## Known state
 - No auth; `createdBy` is a hardcoded `'user'`.
 - Undo/redo: every canvas mutation goes through `src/lib/commands.ts` (which calls `src/lib/client/api.ts`) and pushes a Command onto `historyStore`. New mutations should follow that pattern rather than calling `fetch` directly.
-- Change tracking lives in `src/lib/api/reconciliation.ts`, hooked into `PUT /api/entities/[id]`. A `ReconciliationStatus` row exists only while an entity is flagged. `ConflictResolution` and `ProjectSnapshot` are still schema-only.
+- Change tracking: pure graph/diff logic in `src/lib/impact.ts` (shared with the client), Prisma glue in `src/lib/api/reconciliation.ts`, hooked into PUT and DELETE on `/api/entities/[id]`. A `ReconciliationStatus` row exists only while an entity is flagged. `ConflictResolution` and `ProjectSnapshot` are still schema-only.
 - Canvas logic is split into `src/components/Canvas/hooks/*` and pure helpers in `src/lib/canvas/geometry.ts`; keep `LayerCanvas.tsx` as composition + JSX.
 - `prisma/dev.db` is local and gitignored.

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getEntity, updateEntity, deleteEntity } from '@/lib/api/entities'
-import { recordEntityChange } from '@/lib/api/reconciliation'
+import { recordEntityChange, planDeletionImpact, flagDeletionImpact } from '@/lib/api/reconciliation'
 
 export async function GET(
   request: NextRequest,
@@ -74,9 +74,16 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    await deleteEntity(id)
+    const entity = await getEntity(id)
+    if (!entity) {
+      return NextResponse.json({ error: 'Entity not found' }, { status: 404 })
+    }
 
-    return NextResponse.json({ success: true })
+    const plan = await planDeletionImpact(entity)
+    await deleteEntity(id)
+    const affected = await flagDeletionImpact(plan)
+
+    return NextResponse.json({ success: true, affected })
   } catch (error) {
     console.error('Error deleting entity:', error)
     return NextResponse.json(

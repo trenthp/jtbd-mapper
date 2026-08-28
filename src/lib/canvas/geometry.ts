@@ -57,6 +57,8 @@ export function entitiesIntersectingRect(
   const top = Math.min(a.y, b.y)
   const right = Math.max(a.x, b.x)
   const bottom = Math.max(a.y, b.y)
+  // A click without movement is not a rubber-band selection
+  if (right === left || bottom === top) return []
   return entities
     .filter(e =>
       e.positionX < right &&
@@ -74,16 +76,20 @@ export interface SnapResult {
 
 /**
  * Snap `position` (top-left of the dragged entity) to the edges and centres
- * of `others` when within `snapDistance`. First match on each axis wins.
+ * of `others` when within `snapDistance`. On each axis the nearest
+ * candidate wins; ties go to the earlier entity.
  */
 export function calculateSnapping(
   position: Point,
   others: EntityWithRelations[],
   snapDistance: number
 ): SnapResult {
-  const guides: Omit<SnapGuide, 'id'>[] = []
   let snappedX = position.x
   let snappedY = position.y
+  let bestDx = snapDistance
+  let bestDy = snapDistance
+  let guideX: Omit<SnapGuide, 'id'> | null = null
+  let guideY: Omit<SnapGuide, 'id'> | null = null
 
   const dragged = {
     left: position.x,
@@ -107,10 +113,11 @@ export function calculateSnapping(
       [dragged.right, left, left - ENTITY_WIDTH],
     ]
     for (const [from, to, result] of candidates) {
-      if (Math.abs(from - to) < snapDistance) {
+      const d = Math.abs(from - to)
+      if (d < bestDx) {
+        bestDx = d
         snappedX = result
-        guides.push({ type: 'vertical', position: to, entities: [entity.id] })
-        break
+        guideX = { type: 'vertical', position: to, entities: [entity.id] }
       }
     }
   }
@@ -127,18 +134,19 @@ export function calculateSnapping(
       [dragged.bottom, top, top - ENTITY_HEIGHT],
     ]
     for (const [from, to, result] of candidates) {
-      if (Math.abs(from - to) < snapDistance) {
+      const d = Math.abs(from - to)
+      if (d < bestDy) {
+        bestDy = d
         snappedY = result
-        guides.push({ type: 'horizontal', position: to, entities: [entity.id] })
-        break
+        guideY = { type: 'horizontal', position: to, entities: [entity.id] }
       }
     }
   }
 
-  return {
-    snappedPosition: { x: snappedX, y: snappedY },
-    guides: guides.map((g, i) => ({ ...g, id: `guide-${i}` })),
-  }
+  const guides = [guideX, guideY]
+    .filter((g): g is Omit<SnapGuide, 'id'> => g !== null)
+    .map((g, i) => ({ ...g, id: `guide-${i}` }))
+  return { snappedPosition: { x: snappedX, y: snappedY }, guides }
 }
 
 /** Bounding box + zoom/offset that fits all entities into a width×height view. */

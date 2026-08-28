@@ -61,7 +61,8 @@ export const api = {
     request<{ success: true }>(`/api/entities/${id}/reconcile`, { method: 'POST' }).then(() => undefined),
 
   deleteEntity: (id: string) =>
-    request<{ success: true }>(`/api/entities/${id}`, { method: 'DELETE' }).then(() => undefined),
+    request<{ success: true; affected: ReconciliationStatus[] }>(`/api/entities/${id}`, { method: 'DELETE' })
+      .then(r => r.affected),
 
   createConnection: (input: ConnectionCreateInput) =>
     request<{ connection: LayerConnectionWithEntities }>('/api/connections', {

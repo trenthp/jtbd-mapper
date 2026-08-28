@@ -6,9 +6,14 @@ import { api, EntityCreateInput, ConnectionCreateInput } from '@/lib/client/api'
 import { useEntityStore } from '@/stores/entityStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { EntityWithRelations, LayerConnectionWithEntities } from '@/lib/types'
+import { ReconciliationStatus } from '@prisma/client'
 
 const store = () => useEntityStore.getState()
 const history = () => useHistoryStore.getState()
+
+function applyStatuses(statuses: ReconciliationStatus[]) {
+  statuses.forEach(s => store().setReconciliationState(s.entityId, s))
+}
 
 function entityToCreateInput(e: EntityWithRelations): EntityCreateInput {
   return {
@@ -54,8 +59,9 @@ async function recreateConnections(connections: LayerConnectionWithEntities[]) {
 }
 
 async function destroyEntities(entities: EntityWithRelations[]) {
-  await Promise.all(entities.map(e => api.deleteEntity(e.id)))
+  const affected = await Promise.all(entities.map(e => api.deleteEntity(e.id)))
   store().removeEntities(entities.map(e => e.id))
+  affected.forEach(applyStatuses)
 }
 
 async function destroyConnections(connections: LayerConnectionWithEntities[]) {
@@ -132,12 +138,13 @@ export async function deleteSelection(entityIds: string[], connectionIds: string
     const standalone = connections.filter(
       c => !entityIdSet.has(c.fromEntityId) && !entityIdSet.has(c.toEntityId)
     )
-    await Promise.all([
-      ...entities.map(e => api.deleteEntity(e.id)),
-      ...standalone.map(c => api.deleteConnection(c.id)),
+    const [affected] = await Promise.all([
+      Promise.all(entities.map(e => api.deleteEntity(e.id))),
+      Promise.all(standalone.map(c => api.deleteConnection(c.id))),
     ])
     store().removeEntities(entities.map(e => e.id))
     store().removeConnections(connections.map(c => c.id))
+    affected.forEach(applyStatuses)
   }
 
   await run()
@@ -201,7 +208,7 @@ export async function updateEntity(id: string, updates: Partial<EntityWithRelati
     // The edited entity's own flag is cleared server-side; downstream ones are raised
     if (saved.reconciliationStatus) store().setReconciliationState(id, saved.reconciliationStatus)
     else store().clearReconciliationState(id)
-    affected.forEach(status => store().setReconciliationState(status.entityId, status))
+    applyStatuses(affected)
   }
   await apply(updates)
   history().push({
