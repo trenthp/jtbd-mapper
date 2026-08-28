@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
     }
 
     const connections = await getConnectionsByProject(projectId)
-    
+
     // Filter by entity if specified
     const filteredConnections = entityId
-      ? connections.filter(conn => 
+      ? connections.filter(conn =>
           conn.fromEntityId === entityId || conn.toEntityId === entityId
         )
       : connections
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
+      id,
       projectId,
       fromEntityId,
       toEntityId,
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const connection = await createConnection({
+      ...(typeof id === 'string' && { id }),
       projectId,
       fromEntityId,
       toEntityId,

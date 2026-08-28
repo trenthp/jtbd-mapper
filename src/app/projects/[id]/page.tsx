@@ -1,6 +1,8 @@
 'use client'
 
 import { EntityWithRelations, LayerConnectionWithEntities, NewEntityInput } from '@/lib/types'
+import { createEntity, createConnection } from '@/lib/commands'
+import { useHistoryStore } from '@/stores/historyStore'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Project } from '@prisma/client'
@@ -20,7 +22,7 @@ export default function ProjectPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  
+
   const { currentLayer, setCurrentLayer } = useCanvasStore()
   const { entities, connections } = useEntityStore()
 
@@ -38,6 +40,7 @@ export default function ProjectPage() {
     try {
       // Reset stores before loading new project data
       useEntityStore.getState().resetStore()
+      useHistoryStore.getState().clear()
       useCanvasStore.getState().resetCanvas()
 
       const [entitiesResponse, connectionsResponse] = await Promise.all([
@@ -75,18 +78,12 @@ export default function ProjectPage() {
 
   const handleCreateEntity = async (entityData: NewEntityInput) => {
     try {
-      const response = await fetch('/api/entities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...entityData,
-          projectId,
-          layer: currentLayer
-        })
+      await createEntity({
+        ...entityData,
+        data: entityData.data as EntityWithRelations['data'],
+        projectId,
+        layer: currentLayer
       })
-      
-      const data = await response.json()
-      useEntityStore.getState().addEntity(data.entity)
     } catch (error) {
       console.error('Error creating entity:', error)
     }
@@ -94,37 +91,13 @@ export default function ProjectPage() {
 
   const handleCreateConnection = async (fromEntityId: string, toEntityId: string) => {
     try {
-      const response = await fetch('/api/connections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          fromEntityId,
-          toEntityId,
-          connectionType: 'SUPPORTS',
-          createdBy: 'user' // TODO: Replace with actual user ID
-        })
+      await createConnection({
+        projectId,
+        fromEntityId,
+        toEntityId,
+        connectionType: 'SUPPORTS',
+        createdBy: 'user' // TODO: Replace with actual user ID
       })
-      
-      const data = await response.json()
-      
-      // Add better error handling
-      if (!response.ok) {
-        console.error('API Error:', data.error || 'Unknown error')
-        return
-      }
-      
-      if (!data.connection) {
-        console.error('No connection returned from API:', data)
-        return
-      }
-      
-      if (!data.connection.id) {
-        console.error('Connection missing ID:', data.connection)
-        return
-      }
-      
-      useEntityStore.getState().addConnection(data.connection)
     } catch (error) {
       console.error('Error creating connection:', error)
     }

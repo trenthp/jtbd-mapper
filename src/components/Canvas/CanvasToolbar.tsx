@@ -1,11 +1,15 @@
 'use client'
 
-import { MousePointer, Hand, Zap } from 'lucide-react'
+import { MousePointer, Hand, Zap, Undo2, Redo2 } from 'lucide-react'
 import { useCanvasStore } from '@/stores/canvasStore'
+import { useHistoryStore } from '@/stores/historyStore'
 import { CanvasTool } from '@/lib/types'
 
 export function CanvasToolbar() {
   const { currentTool, connectionMode, setCurrentTool, setConnectionMode } = useCanvasStore()
+  const { past, future, busy, undo, redo } = useHistoryStore()
+  const undoLabel = past[past.length - 1]?.label
+  const redoLabel = future[0]?.label
 
   const tools: Array<{ tool: CanvasTool; icon: React.ElementType; label: string; shortcut?: string }> = [
     {
@@ -47,6 +51,29 @@ export function CanvasToolbar() {
 
   return (
     <div className="space-y-4">
+      {/* History */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-700 mb-2">History</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => undo()}
+            disabled={busy || past.length === 0}
+            title={undoLabel ? `Undo ${undoLabel.toLowerCase()} (Ctrl+Z)` : 'Nothing to undo'}
+            className="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg border border-gray-200 text-sm hover:border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed"
+          >
+            <Undo2 className="h-4 w-4" /> Undo
+          </button>
+          <button
+            onClick={() => redo()}
+            disabled={busy || future.length === 0}
+            title={redoLabel ? `Redo ${redoLabel.toLowerCase()} (Ctrl+Y)` : 'Nothing to redo'}
+            className="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg border border-gray-200 text-sm hover:border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed"
+          >
+            <Redo2 className="h-4 w-4" /> Redo
+          </button>
+        </div>
+      </div>
+
       {/* Connection Mode Toggle */}
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-2">Connection Mode</h3>

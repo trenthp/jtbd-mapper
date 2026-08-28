@@ -6,6 +6,8 @@ import Konva from 'konva'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useEntityStore } from '@/stores/entityStore'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import { useHistoryStore } from '@/stores/historyStore'
+import { deleteSelection, moveEntities, updateEntity as updateEntityCommand, EntityMove } from '@/lib/commands'
 import { useClipboard } from '@/hooks/useClipboard'
 import { EntityNode } from './EntityNode'
 import { ConnectionPath } from './ConnectionPath'
@@ -14,14 +16,6 @@ import { CanvasGrid, snapToGrid } from './CanvasGrid'
 import { ReconciliationState } from '@prisma/client'
 import { EntityWithRelations } from '@/lib/types'
 
-// Simple debounce function outside component to prevent recreating on every render
-function debounce<T extends (...args: never[]) => void>(func: T, wait: number): T {
-  let timeout: NodeJS.Timeout
-  return ((...args: Parameters<T>) => {
-    clearTimeout(timeout)
-    timeout = setTimeout(() => func(...args), wait)
-  }) as T
-}
 
 interface LayerCanvasProps {
   width: number
@@ -51,7 +45,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null)
   const [animatingLayers, setAnimatingLayers] = useState<Set<number>>(new Set())
   const [previousLayer, setPreviousLayer] = useState<number>(layer)
-  
+
   const {
     viewport,
     dragState,
@@ -79,41 +73,15 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   const {
     entities,
     connections,
-    reconciliationStates,
-    removeEntities,
-    removeConnections
+    reconciliationStates
   } = useEntityStore()
+  const { undo, redo } = useHistoryStore()
 
   // Clipboard functionality
   const { copy, paste, duplicate, canPaste } = useClipboard()
-  
-  // Create a stable debounced position save function
-  const saveEntityPosition = useCallback(
-    debounce(async (entityId: string, position: { x: number, y: number }) => {
-      // Don't try to save temporary entities
-      if (entityId.includes('-copy-') || entityId.includes('paste-')) {
-        return
-      }
 
-      try {
-        const response = await fetch(`/api/entities/${entityId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            positionX: position.x,
-            positionY: position.y
-          })
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to update entity position')
-        }
-      } catch (error) {
-        console.error('Failed to save entity position:', error)
-      }
-    }, 500),
-    []
-  )
+  // Positions of every entity in the group at drag start, for undo
+  const dragStartPositions = useRef<Map<string, { x: number, y: number }>>(new Map())
 
   // Memoize filtered entities and connections for better performance
   const currentLayerEntities = useMemo(() =>
@@ -156,36 +124,14 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
       return
     }
 
-    // Delete entities via API
-    if (selectedEntityIds.length > 0) {
-      try {
-        await Promise.all(
-          selectedEntityIds.map(entityId =>
-            fetch(`/api/entities/${entityId}`, { method: 'DELETE' })
-          )
-        )
-        removeEntities(selectedEntityIds)
-      } catch (error) {
-        console.error('Failed to delete entities:', error)
-      }
-    }
-
-    // Delete connections via API
-    if (selectedConnectionIds.length > 0) {
-      try {
-        await Promise.all(
-          selectedConnectionIds.map(connectionId =>
-            fetch(`/api/connections/${connectionId}`, { method: 'DELETE' })
-          )
-        )
-        removeConnections(selectedConnectionIds)
-      } catch (error) {
-        console.error('Failed to delete connections:', error)
-      }
+    try {
+      await deleteSelection(selectedEntityIds, selectedConnectionIds)
+    } catch (error) {
+      console.error('Failed to delete selection:', error)
     }
 
     clearSelection()
-  }, [selectionState, removeEntities, removeConnections, clearSelection])
+  }, [selectionState, clearSelection])
 
   const handleCopy = useCallback(() => {
     return copy()
@@ -383,6 +329,8 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     onPaste: handlePaste,
     onDuplicate: handleDuplicate,
     onSelectAll: handleSelectAll,
+    onUndo: undo,
+    onRedo: redo,
     onZoomIn: handleZoomIn,
     onZoomOut: handleZoomOut,
     onZoomToFit: handleZoomToFit,
@@ -489,7 +437,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   // Handle entity selection
   const handleEntityClick = (entityId: string, e: Konva.KonvaEventObject<MouseEvent>) => {
     const multiSelect = e.evt.ctrlKey || e.evt.metaKey
-    
+
     if (connectionMode.isActive) {
       if (connectionMode.fromEntityId && connectionMode.fromEntityId !== entityId) {
         // Create connection
@@ -501,16 +449,16 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
       }
     } else {
       // Regular selection
-      const newSelectedEntities = multiSelect 
+      const newSelectedEntities = multiSelect
         ? new Set(selectionState.selectedEntities)
         : new Set<string>()
-      
+
       if (newSelectedEntities.has(entityId)) {
         newSelectedEntities.delete(entityId)
       } else {
         newSelectedEntities.add(entityId)
       }
-      
+
       setSelectionState({
         selectedEntities: newSelectedEntities,
         selectedConnections: multiSelect ? selectionState.selectedConnections : new Set()
@@ -524,18 +472,18 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     if (connectionMode.isActive) {
       return
     }
-    
+
     const entity = entities.get(entityId)
     const stage = stageRef.current
     if (entity && stage) {
       // Calculate screen position for the inline editor
       const entityCenterX = entity.positionX + 100 // ENTITY_WIDTH / 2
       const entityCenterY = entity.positionY + 60  // ENTITY_HEIGHT / 2
-      
+
       // Convert entity position to screen coordinates
       const screenX = entityCenterX * stage.scaleX() + stage.x()
       const screenY = entityCenterY * stage.scaleY() + stage.y()
-      
+
       setEditingEntity(entity)
       setEditingPosition({ x: screenX, y: screenY })
     }
@@ -572,6 +520,8 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
 
       // Calculate offsets for all selected entities relative to the dragged entity
       const offsets = new Map<string, { x: number, y: number }>()
+      const startPositions = new Map<string, { x: number, y: number }>()
+      startPositions.set(entityId, { x: draggedEntity.positionX, y: draggedEntity.positionY })
       selectionState.selectedEntities.forEach(selectedId => {
         const selectedEntity = entities.get(selectedId)
         if (selectedEntity && selectedId !== entityId) {
@@ -579,9 +529,11 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
             x: selectedEntity.positionX - draggedEntity.positionX,
             y: selectedEntity.positionY - draggedEntity.positionY
           })
+          startPositions.set(selectedId, { x: selectedEntity.positionX, y: selectedEntity.positionY })
         }
       })
       setGroupDragOffsets(offsets)
+      dragStartPositions.current = startPositions
     }
 
     return true
@@ -668,36 +620,19 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
       finalPosition = snapResult.snappedPosition
     }
 
-    // Update the dragged entity and all selected entities
-    if (!entityId.includes('-copy-') && !entityId.includes('paste-')) {
-      // Update the dragged entity
-      useEntityStore.getState().updateEntity(entityId, {
-        positionX: finalPosition.x,
-        positionY: finalPosition.y
-      })
-
-      // Save dragged entity to database
-      saveEntityPosition(entityId, finalPosition)
-
-      // Update and save all other selected entities
-      groupDragOffsets.forEach((offset, selectedId) => {
-        const selectedEntity = entities.get(selectedId)
-        if (selectedEntity && !selectedId.includes('-copy-') && !selectedId.includes('paste-')) {
-          const newSelectedPosition = {
-            x: finalPosition.x + offset.x,
-            y: finalPosition.y + offset.y
-          }
-
-          useEntityStore.getState().updateEntity(selectedId, {
-            positionX: newSelectedPosition.x,
-            positionY: newSelectedPosition.y
-          })
-
-          // Save each selected entity to database
-          saveEntityPosition(selectedId, newSelectedPosition)
-        }
-      })
-    }
+    // Persist the dragged entity and the rest of the group as one undo step
+    const startPositions = dragStartPositions.current
+    const moves: EntityMove[] = []
+    const fromDragged = startPositions.get(entityId)
+    if (fromDragged) moves.push({ id: entityId, from: fromDragged, to: finalPosition })
+    groupDragOffsets.forEach((offset, selectedId) => {
+      const from = startPositions.get(selectedId)
+      if (from && entities.has(selectedId)) {
+        moves.push({ id: selectedId, from, to: { x: finalPosition.x + offset.x, y: finalPosition.y + offset.y } })
+      }
+    })
+    moveEntities(moves).catch(error => console.error('Failed to save entity positions:', error))
+    dragStartPositions.current = new Map()
 
     // Clear drag states
     setSnappingState({ activeGuides: [], snapPosition: undefined })
@@ -723,27 +658,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   // Handle entity updates
   const handleEntitySave = async (entityId: string, updates: Partial<EntityWithRelations>) => {
     try {
-      const currentEntity = entities.get(entityId)
-      if (!currentEntity) return
-      
-      const response = await fetch(`/api/entities/${entityId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to update entity')
-      }
-      
-      const { entity } = await response.json()
-      
-      // Preserve the current position when updating
-      useEntityStore.getState().updateEntity(entityId, {
-        ...entity,
-        positionX: currentEntity.positionX,
-        positionY: currentEntity.positionY
-      })
+      await updateEntityCommand(entityId, updates)
     } catch (error) {
       console.error('Failed to update entity:', error)
       alert('Failed to update entity. Please try again.')
@@ -753,15 +668,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   // Handle entity deletion
   const handleEntityDelete = async (entityId: string) => {
     try {
-      const response = await fetch(`/api/entities/${entityId}`, {
-        method: 'DELETE'
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete entity')
-      }
-      
-      useEntityStore.getState().removeEntity(entityId)
+      await deleteSelection([entityId])
     } catch (error) {
       console.error('Failed to delete entity:', error)
       alert('Failed to delete entity. Please try again.')
@@ -1115,7 +1022,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
 
     let baseOpacity = 1.0
     let baseHighlight = false
-    
+
     // Adjust opacity based on layer context
     if (layerContext === 'below') {
       baseOpacity = 0.5
@@ -1213,7 +1120,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
                   currentLayer={layer}
                 />
               ))}
-              
+
               {/* Above layer entities */}
               {aboveLayerEntities.map(entity => (
                 <EntityNode
@@ -1232,7 +1139,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
               ))}
             </Group>
           )}
-          
+
           {/* Render layer below (middle depth) */}
           {belowLayerEntities.length > 0 && (
             <Group opacity={getLayerOpacity(layer - 1)}>
@@ -1247,7 +1154,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
                   currentLayer={layer}
                 />
               ))}
-              
+
               {/* Below layer entities */}
               {belowLayerEntities.map(entity => (
                 <EntityNode
@@ -1266,13 +1173,13 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
               ))}
             </Group>
           )}
-          
+
           {/* Render current layer connections first (behind current entities) */}
           {currentLayerConnections.map(connection => {
             // Check if this connection involves the dragged entity
-            const isDraggedConnection = !!draggedEntityId && 
+            const isDraggedConnection = !!draggedEntityId &&
               (connection.fromEntityId === draggedEntityId || connection.toEntityId === draggedEntityId)
-            
+
             return (
               <ConnectionPath
                 key={connection.id}
@@ -1283,16 +1190,16 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
                 currentLayer={layer}
                 onClick={(connectionId, e) => {
                   const multiSelect = e.evt.ctrlKey || e.evt.metaKey
-                  const newSelectedConnections = multiSelect 
+                  const newSelectedConnections = multiSelect
                     ? new Set(selectionState.selectedConnections)
                     : new Set<string>()
-                  
+
                   if (newSelectedConnections.has(connectionId)) {
                     newSelectedConnections.delete(connectionId)
                   } else {
                     newSelectedConnections.add(connectionId)
                   }
-                  
+
                   setSelectionState({
                     selectedConnections: newSelectedConnections,
                     selectedEntities: multiSelect ? selectionState.selectedEntities : new Set()
@@ -1301,7 +1208,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
               />
             )
           })}
-          
+
           {/* Render current layer entities (foreground) */}
           {currentLayerEntities.map(entity => (
             <EntityNode
@@ -1326,7 +1233,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
               onDragEnd={(entityId, pos) => handleEntityDragEnd(entityId, pos)}
             />
           ))}
-          
+
           {/* Connection preview line when in connection mode */}
           {connectionPreview && (
             <Line
@@ -1373,7 +1280,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
           ))}
         </Layer>
       </Stage>
-      
+
       {/* Inline Entity Editor */}
       <InlineEntityEditor
         entity={editingEntity}

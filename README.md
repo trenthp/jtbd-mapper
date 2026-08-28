@@ -24,8 +24,7 @@ Entities live on one layer. Connections (`SUPPORTS`, `DERIVES_FROM`, `CONFLICTS_
 
 ```bash
 npm install
-cp .env.example .env        # sets DATABASE_URL to the local sqlite file
-npx prisma migrate dev      # creates prisma/dev.db and applies migrations
+npx prisma migrate dev      # creates prisma/dev.db (path is set in prisma/schema.prisma)
 npm run dev                 # http://localhost:3000
 ```
 
@@ -48,4 +47,5 @@ prisma/schema.prisma     data model
 - Scroll to zoom, drag empty space (or hold Space) to pan, `0` to zoom-to-fit
 - Click / shift-click / drag-rectangle to select; drag to move selection
 - Alt-drag to duplicate; `Ctrl+C` / `Ctrl+V` / `Ctrl+D`; `Delete` to remove
+- `Ctrl+Z` undo, `Ctrl+Shift+Z` / `Ctrl+Y` redo (moves, edits, creates, deletes, paste)
 - Drag from an entity's edge anchor to another entity to create a connection

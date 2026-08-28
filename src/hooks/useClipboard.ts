@@ -4,6 +4,8 @@ import { useState, useCallback } from 'react'
 import { useEntityStore } from '@/stores/entityStore'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { EntityWithRelations } from '@/lib/types'
+import { createEntities } from '@/lib/commands'
+import { EntityCreateInput } from '@/lib/client/api'
 
 interface ClipboardData {
   entities: EntityWithRelations[]
@@ -12,7 +14,7 @@ interface ClipboardData {
 
 export function useClipboard() {
   const [clipboardData, setClipboardData] = useState<ClipboardData | null>(null)
-  const { entities, addEntity, cleanupTemporaryEntities } = useEntityStore()
+  const { entities } = useEntityStore()
   const { selectionState } = useCanvasStore()
 
   const copySelected = useCallback(() => {
@@ -52,55 +54,29 @@ export function useClipboard() {
     const entitySpacing = 220 // Entity width + padding
 
     try {
-      // Create entities via API first
-      const createPromises = clipboardData.entities.map(async (entity, index) => {
+      const inputs: EntityCreateInput[] = clipboardData.entities.map((entity, index) => {
         const row = Math.floor(index / gridSize)
         const col = index % gridSize
-
-        const pastePosition = {
-          x: basePosition.x + (col * entitySpacing),
-          y: basePosition.y + (row * 140) // Entity height + padding
-        }
-
-        const entityData = {
+        return {
           type: entity.type,
           layer: entity.layer,
           title: `${entity.title} (Pasted)`,
           description: entity.description,
           data: entity.data,
-          positionX: pastePosition.x,
-          positionY: pastePosition.y,
+          positionX: basePosition.x + (col * entitySpacing),
+          positionY: basePosition.y + (row * 140), // Entity height + padding
           tags: entity.tags,
           projectId: entity.projectId,
           status: entity.status
         }
-
-        const response = await fetch('/api/entities', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(entityData)
-        })
-
-        if (!response.ok) {
-          throw new Error(`Failed to create entity: ${response.statusText}`)
-        }
-
-        const newEntity = await response.json()
-        addEntity(newEntity.entity || newEntity)
-        return newEntity.entity || newEntity
       })
-
-      await Promise.all(createPromises)
-
-      // Clean up any temporary entities that might have been created
-      cleanupTemporaryEntities()
-
+      await createEntities(inputs, 'Paste')
       return true
     } catch (error) {
       console.error('Failed to paste entities:', error)
       return false
     }
-  }, [clipboardData, addEntity, cleanupTemporaryEntities])
+  }, [clipboardData])
 
   const duplicate = useCallback(async (entityIds?: string[], offset = { x: 20, y: 20 }) => {
     const targetIds = entityIds || Array.from(selectionState.selectedEntities)
@@ -108,11 +84,10 @@ export function useClipboard() {
     if (targetIds.length === 0) return false
 
     try {
-      const createPromises = targetIds.map(async (entityId) => {
-        const entity = entities.get(entityId)
-        if (!entity) return null
-
-        const entityData = {
+      const inputs: EntityCreateInput[] = targetIds
+        .map(id => entities.get(id))
+        .filter((e): e is EntityWithRelations => !!e)
+        .map(entity => ({
           type: entity.type,
           layer: entity.layer,
           title: `${entity.title} (Copy)`,
@@ -123,34 +98,14 @@ export function useClipboard() {
           tags: entity.tags,
           projectId: entity.projectId,
           status: entity.status
-        }
-
-        const response = await fetch('/api/entities', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(entityData)
-        })
-
-        if (!response.ok) {
-          throw new Error(`Failed to duplicate entity: ${response.statusText}`)
-        }
-
-        const newEntity = await response.json()
-        addEntity(newEntity.entity || newEntity)
-        return newEntity.entity || newEntity
-      })
-
-      await Promise.all(createPromises)
-
-      // Clean up any temporary entities that might have been created
-      cleanupTemporaryEntities()
-
+        }))
+      await createEntities(inputs, 'Duplicate')
       return true
     } catch (error) {
       console.error('Failed to duplicate entities:', error)
       return false
     }
-  }, [entities, selectionState.selectedEntities, addEntity, cleanupTemporaryEntities])
+  }, [entities, selectionState.selectedEntities])
 
   const canPaste = useCallback(() => {
     return clipboardData !== null && clipboardData.entities.length > 0

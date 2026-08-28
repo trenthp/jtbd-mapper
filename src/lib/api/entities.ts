@@ -3,6 +3,7 @@ import { EntityStatus, Prisma } from '@prisma/client'
 import { EntityWithRelations } from '@/lib/types'
 
 export async function createEntity(data: {
+  id?: string
   projectId: string
   type: string
   layer: number
@@ -32,7 +33,7 @@ export async function createEntity(data: {
 }
 
 export async function updateEntity(
-  entityId: string, 
+  entityId: string,
   data: Prisma.EntityUncheckedUpdateInput
 ): Promise<EntityWithRelations> {
   const entity = await prisma.entity.update({
@@ -88,13 +89,13 @@ export async function getEntitiesByProject(projectId: string): Promise<EntityWit
 }
 
 export async function getEntitiesByLayer(
-  projectId: string, 
+  projectId: string,
   layer: number
 ): Promise<EntityWithRelations[]> {
   const entities = await prisma.entity.findMany({
-    where: { 
+    where: {
       projectId,
-      layer 
+      layer
     },
     include: {
       project: true,

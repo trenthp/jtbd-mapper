@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
     }
 
     const entities = await getEntitiesByProject(projectId)
-    
+
     // Filter by layer if specified
-    const filteredEntities = layer 
+    const filteredEntities = layer
       ? entities.filter(entity => entity.layer === parseInt(layer))
       : entities
 
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
+      id,
       projectId,
       type,
       layer,
@@ -44,7 +45,8 @@ export async function POST(request: NextRequest) {
       positionX,
       positionY,
       tags,
-      data
+      data,
+      status
     } = body
 
     if (!projectId || !type || layer === undefined || !title) {
@@ -64,13 +66,14 @@ export async function POST(request: NextRequest) {
 
     // Create entity with provided data or defaults
     const entityData = data || createEntityWithDefaults(
-      type, 
-      layer, 
+      type,
+      layer,
       { x: positionX || 0, y: positionY || 0 },
       projectId
     ).data
 
     const entity = await createEntity({
+      ...(typeof id === 'string' && { id }),
       projectId,
       type,
       layer,
@@ -79,7 +82,8 @@ export async function POST(request: NextRequest) {
       data: entityData,
       positionX: positionX || 0,
       positionY: positionY || 0,
-      tags: tags || []
+      tags: tags || [],
+      ...(status && { status })
     })
 
     return NextResponse.json({ entity }, { status: 201 })

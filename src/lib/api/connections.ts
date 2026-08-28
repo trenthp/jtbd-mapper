@@ -3,6 +3,7 @@ import { LayerConnection, ConnectionType, ConnectionStrength } from '@prisma/cli
 import { LayerConnectionWithEntities } from '@/lib/types'
 
 export async function createConnection(data: {
+  id?: string
   projectId: string
   fromEntityId: string
   toEntityId: string
