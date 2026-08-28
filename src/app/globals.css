@@ -6,4 +6,14 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  overscroll-behavior: none;
+}
+
+/* Konva's container must not let the browser pan/zoom the page on touch */
+.konvajs-content {
+  touch-action: none;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }

@@ -70,6 +70,18 @@ export const api = {
       body: JSON.stringify(input),
     }).then(r => r.connection),
 
+  updateConnection: (id: string, updates: Partial<LayerConnectionWithEntities>) =>
+    request<{ connection: LayerConnectionWithEntities }>(`/api/connections/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }).then(r => r.connection),
+
+  updateProject: (id: string, updates: { name?: string; description?: string | null }) =>
+    request<{ project: { id: string; name: string; description: string | null } }>(`/api/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }).then(r => r.project),
+
   deleteConnection: (id: string) =>
     request<{ success: true }>(`/api/connections/${id}`, { method: 'DELETE' }).then(() => undefined),
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Stage, Layer, Line, Rect } from 'react-konva'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useEntityStore } from '@/stores/entityStore'
@@ -20,6 +20,8 @@ import { useLayerData } from './hooks/useLayerData'
 import { useStageViewport } from './hooks/useStageViewport'
 import { useEntityDrag } from './hooks/useEntityDrag'
 import { useStageInteractions } from './hooks/useStageInteractions'
+import { useUIStore } from '@/stores/uiStore'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 
 interface LayerCanvasProps {
   width: number
@@ -43,14 +45,33 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   const currentTool = useCanvasStore(s => s.currentTool)
   const isPanMode = useCanvasStore(s => s.isPanMode)
   const dragState = useCanvasStore(s => s.dragState)
+  const showAdjacentLayers = useCanvasStore(s => s.showAdjacentLayers)
+  const setViewActions = useCanvasStore(s => s.setViewActions)
+  const openInspector = useUIStore(s => s.openInspector)
+  const isMobile = useIsMobile()
   const setSelectionState = useCanvasStore(s => s.setSelectionState)
   const clearSelection = useCanvasStore(s => s.clearSelection)
   const { undo, redo } = useHistoryStore()
 
   const layers = useLayerData(layer)
-  const { stageRef, stageScale, viewport, zoomIn, zoomOut, zoomToFit, handleStageDragEnd } =
+  const { stageRef, stageScale, viewport, zoomIn, zoomOut, zoomToFit, handleStageDragEnd, handleTouchMove, handleTouchEnd } =
     useStageViewport(width, height)
   const { copy, paste, duplicate } = useClipboard()
+
+  // Expose zoom controls to chrome outside the canvas (header, tool strip)
+  useEffect(() => {
+    setViewActions({
+      zoomIn,
+      zoomOut,
+      zoomToFit: () => zoomToFit(Array.from(useEntityStore.getState().entities.values())),
+      // Centre an entity (given its top-left) in the visible area at the current zoom
+      panTo: (x, y) => {
+        const { viewport: v, setViewport } = useCanvasStore.getState()
+        setViewport({ x: width / 2 - (x + 100) * v.zoom, y: height / 2 - (y + 60) * v.zoom })
+      },
+    })
+    return () => setViewActions({})
+  }, [zoomIn, zoomOut, zoomToFit, setViewActions, width, height])
 
   const createConnection = useCallback(async (from: string, to: string) => {
     try {
@@ -81,9 +102,15 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     const entity = entities.get(entityId)
     const stage = stageRef.current
     if (!entity || !stage) return
+    if (isMobile) {
+      // A popover anchored under a thumb is unusable; use the inspector sheet
+      setSelectionState({ selectedEntities: new Set([entityId]), selectedConnections: new Set() })
+      openInspector()
+      return
+    }
     setEditingEntity(entity)
     setEditingPosition(worldToStage(stage, entityCenter(entity)))
-  }, [connectionMode.isActive, entities, stageRef])
+  }, [connectionMode.isActive, entities, stageRef, isMobile, setSelectionState, openInspector])
 
   const handleEntitySave = useCallback(async (entityId: string, updates: Partial<EntityWithRelations>) => {
     try {
@@ -161,6 +188,8 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
         onMouseDown={interactions.handleStageMouseDown}
         onMouseUp={interactions.handleStageMouseUp}
         onMouseMove={interactions.handleStageMouseMove}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         onContextMenu={interactions.handleStageContextMenu}
         style={{ cursor: isPanMode ? 'grab' : currentTool.cursor }}
       >
@@ -177,20 +206,24 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
             listening={false}
           />
 
-          <AdjacentLayer
-            context="above"
-            currentLayer={layer}
-            entities={layers.aboveEntities}
-            connections={layers.aboveConnections}
-            reconciliationStates={reconciliationStates}
-          />
-          <AdjacentLayer
-            context="below"
-            currentLayer={layer}
-            entities={layers.belowEntities}
-            connections={layers.belowConnections}
-            reconciliationStates={reconciliationStates}
-          />
+          {showAdjacentLayers && (
+            <>
+              <AdjacentLayer
+                context="above"
+                currentLayer={layer}
+                entities={layers.aboveEntities}
+                connections={layers.aboveConnections}
+                reconciliationStates={reconciliationStates}
+              />
+              <AdjacentLayer
+                context="below"
+                currentLayer={layer}
+                entities={layers.belowEntities}
+                connections={layers.belowConnections}
+                reconciliationStates={reconciliationStates}
+              />
+            </>
+          )}
 
           {/* Current layer: connections behind entities */}
           {layers.currentConnections.map(connection => (

@@ -33,7 +33,7 @@ export function useKeyboardShortcuts({
   onCreateEntity,
   isEnabled = true
 }: KeyboardShortcutsProps) {
-  const { clearSelection } = useCanvasStore()
+  const { clearSelection, setCurrentTool, setConnectionMode, connectionMode } = useCanvasStore()
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     // Don't trigger shortcuts if typing in inputs
@@ -67,19 +67,28 @@ export function useKeyboardShortcuts({
         }
         break
 
-      // Copy
+      // Copy / Connect tool
       case 'c':
         if (cmdKey && onCopy) {
           preventDefault()
           onCopy()
+        } else if (!cmdKey) {
+          preventDefault()
+          const next = !connectionMode.isActive
+          setConnectionMode({ isActive: next, fromEntityId: undefined })
+          setCurrentTool({ type: 'select', cursor: next ? 'crosshair' : 'default' })
         }
         break
 
-      // Paste
+      // Paste / Select tool
       case 'v':
         if (cmdKey && onPaste) {
           preventDefault()
           onPaste()
+        } else if (!cmdKey) {
+          preventDefault()
+          setConnectionMode({ isActive: false, fromEntityId: undefined })
+          setCurrentTool({ type: 'select', cursor: 'default' })
         }
         break
 
@@ -153,6 +162,15 @@ export function useKeyboardShortcuts({
         }
         break
 
+      // Pan tool
+      case 'h':
+        if (!cmdKey) {
+          preventDefault()
+          setConnectionMode({ isActive: false, fromEntityId: undefined })
+          setCurrentTool({ type: 'pan', cursor: 'grab' })
+        }
+        break
+
       // Clear selection
       case 'escape':
         preventDefault()
@@ -165,7 +183,7 @@ export function useKeyboardShortcuts({
   }, [
     onDelete, onCopy, onPaste, onDuplicate, onSelectAll,
     onUndo, onRedo, onZoomIn, onZoomOut, onZoomToFit,
-    onCreateEntity, clearSelection, isEnabled
+    onCreateEntity, clearSelection, isEnabled, setCurrentTool, setConnectionMode, connectionMode.isActive
   ])
 
   const handleWheel = useCallback((event: WheelEvent) => {

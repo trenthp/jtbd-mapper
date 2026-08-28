@@ -279,6 +279,10 @@ export interface CanvasStore {
   currentTool: CanvasTool
   isPanMode: boolean
   currentLayer: number
+  /** Render the layers above/below the current one, dimmed */
+  showAdjacentLayers: boolean
+  /** Imperative view controls, registered by the mounted canvas */
+  viewActions: { zoomIn?: () => void; zoomOut?: () => void; zoomToFit?: () => void; panTo?: (x: number, y: number) => void }
 
   // Actions
   setViewport: (viewport: Partial<Viewport>) => void
@@ -291,6 +295,8 @@ export interface CanvasStore {
   setCurrentTool: (tool: CanvasTool) => void
   setIsPanMode: (isPanMode: boolean) => void
   setCurrentLayer: (layer: number) => void
+  setShowAdjacentLayers: (show: boolean) => void
+  setViewActions: (actions: CanvasStore['viewActions']) => void
 
   // Selection helpers
   selectEntity: (entityId: string, multiSelect?: boolean) => void

@@ -33,15 +33,25 @@ npm run dev                 # http://localhost:3000
 npm test                    # vitest: pure geometry and impact-analysis helpers
 ```
 
+## Workspace layout
+
+- **Top bar** — back, project name (click to rename), layer switcher with entity/flag counts, undo/redo, zoom, Review badge, and a `⋯` menu (rename, export JSON, delete project).
+- **Tool strip** (floating, bottom-centre) — Select (V), Pan (H), Connect (C), Add (creates the layer's default type; the chevron picks another), snap-to-grid, show/hide adjacent layers, zoom to fit.
+- **Outline** (left) — searchable list of the current layer's entities grouped by type; searching spans all layers.
+- **Inspector** (right) — the selected entity (all fields, connections, review state, what depends on it), the selected connection (type, strength, rationale), or the review queue when nothing is selected.
+
+On screens narrower than 1024px the outline becomes a drawer, the inspector a bottom sheet, and the canvas supports one-finger pan, pinch zoom, and double-tap to edit.
+
 ## Project layout
 
 ```
 src/app/                 routes and API handlers (app/api/{projects,entities,connections})
-src/components/Canvas/   Konva canvas: LayerCanvas, EntityNode, ConnectionPath, minimap, grid, toolbar
-src/components/Projects/ project sidebar, grid, layer tabs
-src/components/Entity/   entity editor forms
-src/hooks/               keyboard shortcuts, clipboard
-src/stores/              zustand stores (entities, canvas viewport/selection)
+src/components/Workspace/ header, layer switcher, tool strip, outline, inspector, responsive layout
+src/components/Canvas/   Konva canvas: LayerCanvas + hooks, EntityNode, ConnectionPath, minimap, grid
+src/components/Projects/ project grid, canvas host, review queue
+src/hooks/               keyboard shortcuts, clipboard, media queries
+src/stores/              zustand stores (entities, canvas, history, ui)
+src/lib/entityTypes.ts   layers, entity types, and their editable fields — single source of truth
 src/lib/api/             Prisma data-access functions used by the API routes
 src/lib/types.ts         shared entity/connection types
 prisma/schema.prisma     data model
@@ -53,4 +63,5 @@ prisma/schema.prisma     data model
 - Click / shift-click / drag-rectangle to select; drag to move selection
 - Alt-drag to duplicate; `Ctrl+C` / `Ctrl+V` / `Ctrl+D`; `Delete` to remove
 - `Ctrl+Z` undo, `Ctrl+Shift+Z` / `Ctrl+Y` redo (moves, edits, creates, deletes, paste)
-- Drag from an entity's edge anchor to another entity to create a connection
+- Connect tool (C): click one entity, then another
+- V / H switch to Select / Pan

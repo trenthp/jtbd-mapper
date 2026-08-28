@@ -1,4 +1,7 @@
 import Link from 'next/link'
+import { LAYERS } from '@/lib/entityTypes'
+
+const TONE_BORDER = { blue: 'border-blue-500', green: 'border-green-500', purple: 'border-purple-500', orange: 'border-orange-500' } as const
 import { ProjectsGrid } from '@/components/Projects/ProjectsGrid'
 
 export default function Home() {
@@ -13,7 +16,7 @@ export default function Home() {
                 Map and visualize Jobs-to-be-Done across design layers
               </p>
             </div>
-            <Link 
+            <Link
               href="/projects/new"
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
@@ -32,30 +35,12 @@ export default function Home() {
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Getting Started</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="border-l-4 border-blue-500 pl-4">
-              <h4 className="font-medium text-gray-900">Layer 1: Jobs & Objectives</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                Start with user jobs, business objectives, and secondary considerations
-              </p>
-            </div>
-            <div className="border-l-4 border-green-500 pl-4">
-              <h4 className="font-medium text-gray-900">Layer 2: Specifications</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                Define functional specs, content requirements, and system needs
-              </p>
-            </div>
-            <div className="border-l-4 border-purple-500 pl-4">
-              <h4 className="font-medium text-gray-900">Layer 3: Interactions</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                Map interactions and information architecture
-              </p>
-            </div>
-            <div className="border-l-4 border-orange-500 pl-4">
-              <h4 className="font-medium text-gray-900">Layer 4: Interface Design</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                Design the screens and components that deliver each interaction
-              </p>
-            </div>
+            {LAYERS.map(layer => (
+              <div key={layer.id} className={`border-l-4 pl-4 ${TONE_BORDER[layer.tone]}`}>
+                <h4 className="font-medium text-gray-900">Layer {layer.id}: {layer.name}</h4>
+                <p className="text-sm text-gray-600 mt-1">{layer.blurb}</p>
+              </div>
+            ))}
           </div>
         </div>
       </main>

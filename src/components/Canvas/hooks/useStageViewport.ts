@@ -94,5 +94,49 @@ export function useStageViewport(width: number, height: number) {
     if (stage) setViewport({ x: stage.x(), y: stage.y() })
   }, [setViewport])
 
-  return { stageRef, stageScale, viewport, zoomIn, zoomOut, zoomToFit, handleStageDragEnd }
+  // ---- pinch zoom (touch) ----
+  const pinch = useRef<{ dist: number; center: { x: number; y: number } } | null>(null)
+
+  const handleTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+    const stage = stageRef.current
+    const [t1, t2] = [e.evt.touches[0], e.evt.touches[1]]
+    if (!stage || !t1 || !t2) return
+    e.evt.preventDefault()
+    // Two fingers: stop any one-finger pan Konva started
+    if (stage.isDragging()) stage.stopDrag()
+
+    const rect = stage.container().getBoundingClientRect()
+    const p1 = { x: t1.clientX - rect.left, y: t1.clientY - rect.top }
+    const p2 = { x: t2.clientX - rect.left, y: t2.clientY - rect.top }
+    const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+    const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
+
+    if (!pinch.current) {
+      pinch.current = { dist, center }
+      return
+    }
+
+    const oldScale = stage.scaleX()
+    const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, oldScale * (dist / pinch.current.dist)))
+    // Keep the world point under the previous centre fixed, then follow the centre's movement
+    const worldCenter = {
+      x: (pinch.current.center.x - stage.x()) / oldScale,
+      y: (pinch.current.center.y - stage.y()) / oldScale,
+    }
+    stage.scale({ x: newScale, y: newScale })
+    stage.position({ x: center.x - worldCenter.x * newScale, y: center.y - worldCenter.y * newScale })
+    stage.batchDraw()
+    setStageScale(newScale)
+    pinch.current = { dist, center }
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    const stage = stageRef.current
+    if (pinch.current && stage) {
+      setViewport({ x: stage.x(), y: stage.y(), zoom: stage.scaleX() })
+    }
+    pinch.current = null
+  }, [setViewport])
+
+  return { stageRef, stageScale, viewport, zoomIn, zoomOut, zoomToFit, handleStageDragEnd, handleTouchMove, handleTouchEnd }
 }

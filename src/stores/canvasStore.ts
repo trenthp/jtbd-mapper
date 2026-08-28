@@ -49,6 +49,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   currentLayer: 1,
 
+  showAdjacentLayers: true,
+
+  viewActions: {},
+
   setViewport: (viewport: Partial<Viewport>) => {
     set((state) => ({
       viewport: { ...state.viewport, ...viewport }
@@ -101,6 +105,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   setCurrentLayer: (layer: number) => {
     set(() => ({ currentLayer: layer }))
+  },
+
+  setShowAdjacentLayers: (showAdjacentLayers: boolean) => {
+    set(() => ({ showAdjacentLayers }))
+  },
+
+  setViewActions: (viewActions) => {
+    set(() => ({ viewActions }))
   },
 
   // Helper methods

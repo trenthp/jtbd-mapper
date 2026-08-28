@@ -182,6 +182,22 @@ export async function moveEntities(moves: EntityMove[]) {
   })
 }
 
+/** Edit a connection's type, strength or rationale. */
+export async function updateConnection(id: string, updates: Partial<LayerConnectionWithEntities>) {
+  const before = store().connections.get(id)
+  if (!before) return
+  const previous: Partial<LayerConnectionWithEntities> = {}
+  for (const key of Object.keys(updates) as (keyof LayerConnectionWithEntities)[]) {
+    Object.assign(previous, { [key]: before[key] })
+  }
+  const apply = async (patch: Partial<LayerConnectionWithEntities>) => {
+    const saved = await api.updateConnection(id, patch)
+    store().updateConnection(id, saved)
+  }
+  await apply(updates)
+  history().push({ label: 'Edit connection', undo: () => apply(previous), redo: () => apply(updates) })
+}
+
 /** Clear an entity's reconciliation flag. Not recorded in history. */
 export async function markReviewed(id: string) {
   await api.markReviewed(id)

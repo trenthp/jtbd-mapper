@@ -11,8 +11,11 @@ See README.md for the product overview and layout.
 ## Conventions
 - API routes in `src/app/api/**` are thin: validate input, call a function in `src/lib/api/*`, return `{ <resource> }` JSON. Keep Prisma calls out of route files.
 - Client state is Zustand: `entityStore` (Map of entities + connections) and `canvasStore` (viewport, selection, tool mode). Components call the API with `fetch` and then update the store; there is no server-state library.
-- Layers are numbered 1–4 (see LayerTabs.tsx for names). Connections must be same-layer or adjacent — enforced server-side in `lib/api/connections.ts`.
+- Layers, entity types, per-type editable fields, and connection/status enums are defined once in `src/lib/entityTypes.ts`; never hardcode them in components. Connections must be same-layer or adjacent — enforced server-side in `lib/api/connections.ts`.
 - Entity `data` is a JSON column; the per-type shapes are in `src/lib/types.ts`.
+
+- Workspace chrome lives in `src/components/Workspace/`. Panels are the same components on every screen size; `WorkspaceLayout` decides column vs. drawer/sheet using `useIsMobile()` (Tailwind `lg`, 1024px). Keep new UI usable at 400px wide.
+- Chrome outside the canvas reaches zoom/pan through `canvasStore.viewActions`, registered by `LayerCanvas`.
 
 ## Known state
 - No auth; `createdBy` is a hardcoded `'user'`.
