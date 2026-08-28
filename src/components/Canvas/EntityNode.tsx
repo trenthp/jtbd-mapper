@@ -26,7 +26,7 @@ interface EntityNodeProps {
   onClick: (entityId: string, e: Konva.KonvaEventObject<MouseEvent>) => void
   onDoubleClick?: (entityId: string) => void
   onDragStart: (entityId: string) => boolean
-  onDrag?: (entityId: string, position: { x: number, y: number }) => void
+  onDrag?: (entityId: string, position: { x: number, y: number }, altKey?: boolean) => void
   onDragEnd: (entityId: string, position: { x: number, y: number }) => void
 }
 
@@ -80,10 +80,7 @@ export function EntityNode({
   const handleDrag = (e: Konva.KonvaEventObject<DragEvent>) => {
     if (onDrag) {
       const node = e.target
-      onDrag(entity.id, {
-        x: node.x(),
-        y: node.y()
-      })
+      onDrag(entity.id, { x: node.x(), y: node.y() }, e.evt?.altKey ?? false)
     }
   }
 
