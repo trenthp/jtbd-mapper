@@ -15,7 +15,7 @@ import { ReconciliationState } from '@prisma/client'
 import { EntityWithRelations } from '@/lib/types'
 
 // Simple debounce function outside component to prevent recreating on every render
-function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+function debounce<T extends (...args: never[]) => void>(func: T, wait: number): T {
   let timeout: NodeJS.Timeout
   return ((...args: Parameters<T>) => {
     clearTimeout(timeout)
@@ -330,8 +330,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   }, [entities, width, height, setViewport])
 
   const handleCreateEntity = useCallback(() => {
-    // This would trigger entity creation dialog
-    console.log('Create new entity shortcut - implement entity creation dialog')
+    // TODO: open entity creation dialog
   }, [])
 
   // Handle layer transitions with animation
@@ -475,7 +474,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     }
 
     stage.on('wheel', handleWheel)
-    return () => stage.off('wheel', handleWheel)
+    return () => { stage.off('wheel', handleWheel) }
   }, [setViewport])
 
   // Handle stage drag
@@ -588,7 +587,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     return true
   }
 
-  const handleEntityDrag = (entityId: string, position: { x: number, y: number }, event?: any) => {
+  const handleEntityDrag = (entityId: string, position: { x: number, y: number }, event?: Konva.KonvaEventObject<DragEvent>) => {
     // Check if Alt key is pressed during drag
     const isAltPressed = event?.evt?.altKey || false
 
@@ -596,13 +595,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
       // Start duplication mode - create duplicate at original position
       setIsDuplicatingDrag(true)
       // Don't await this - let it happen in background
-      duplicate([entityId], { x: 0, y: 0 }).then(() => {
-        console.log('Alt+drag duplication completed')
-        // Force a small delay to ensure the new entity is rendered
-        setTimeout(() => {
-          console.log('Entities after duplication:', Array.from(entities.values()).map(e => e.id))
-        }, 100)
-      }).catch(console.error)
+      duplicate([entityId], { x: 0, y: 0 }).catch(console.error)
     }
 
     // Apply snapping if enabled
@@ -728,7 +721,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   }
 
   // Handle entity updates
-  const handleEntitySave = async (entityId: string, updates: any) => {
+  const handleEntitySave = async (entityId: string, updates: Partial<EntityWithRelations>) => {
     try {
       const currentEntity = entities.get(entityId)
       if (!currentEntity) return
@@ -950,8 +943,8 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
       y: (pointer.y - stage.y()) / stage.scaleY()
     }
 
-    // TODO: Show context menu for creating new entities
-    console.log('Context menu at:', worldPos)
+    // TODO: Show context menu for creating new entities at worldPos
+    void worldPos
   }
 
   // Handle minimap navigation
@@ -1277,7 +1270,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
           {/* Render current layer connections first (behind current entities) */}
           {currentLayerConnections.map(connection => {
             // Check if this connection involves the dragged entity
-            const isDraggedConnection = draggedEntityId && 
+            const isDraggedConnection = !!draggedEntityId && 
               (connection.fromEntityId === draggedEntityId || connection.toEntityId === draggedEntityId)
             
             return (

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Entity, LayerConnection, ReconciliationStatus } from '@prisma/client'
+import { Entity, LayerConnection, ReconciliationStatus, Prisma } from '@prisma/client'
 import { EntityWithRelations, LayerConnectionWithEntities, EntityStore } from '@/lib/types'
 
 export const useEntityStore = create<EntityStore>((set, get) => ({
@@ -195,7 +195,7 @@ export const createEntityWithDefaults = (
   version: 1
 })
 
-export const getDefaultDataForType = (type: string): any => {
+export const getDefaultDataForType = (type: string): Prisma.JsonObject => {
   switch (type) {
     case 'user_job':
       return {

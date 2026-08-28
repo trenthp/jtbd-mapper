@@ -141,7 +141,7 @@ export function ConnectionPath({ connection, isSelected, isDraggedConnection, on
           lineJoin="round"
           opacity={opacity}
           onClick={(e) => onClick(connection.id, e)}
-          onTap={(e) => onClick(connection.id, e)}
+          onTap={(e) => onClick(connection.id, e as Konva.KonvaEventObject<MouseEvent>)}
         />
       )}
     </Group>

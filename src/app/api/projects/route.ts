@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createProject, getAllProjects, deleteProject } from '@/lib/api/projects'
+import { createProject, getAllProjects } from '@/lib/api/projects'
 
 export async function GET() {
   try {

@@ -1,4 +1,4 @@
-import { Entity, LayerConnection, ReconciliationStatus, Project } from '@prisma/client'
+import { Entity, LayerConnection, ReconciliationStatus, Project, Prisma } from '@prisma/client'
 
 // Extended types with relationships
 export interface EntityWithRelations extends Entity {
@@ -6,13 +6,26 @@ export interface EntityWithRelations extends Entity {
   toConnections: LayerConnection[]
   reconciliationStatus?: ReconciliationStatus | null
   project: Project
-  tags: any // JSON field that can be string[] or string
+  tags: Prisma.JsonValue // JSON column, normally string[]
 }
 
 export interface LayerConnectionWithEntities extends LayerConnection {
   fromEntity: Entity
   toEntity: Entity
   project: Project
+}
+
+// Payload accepted by POST /api/entities
+export interface NewEntityInput {
+  projectId?: string
+  type: string
+  layer?: number
+  title: string
+  description?: string
+  data?: Record<string, unknown>
+  positionX?: number
+  positionY?: number
+  tags?: string[]
 }
 
 // Frontend-specific types

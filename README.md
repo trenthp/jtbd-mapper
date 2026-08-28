@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# JTBD Mapper
 
-## Getting Started
+An interactive canvas for mapping Jobs-to-be-Done across four design layers, with typed connections between layers so you can trace a job all the way down to the interface that serves it.
 
-First, run the development server:
+## Layers
+
+| Layer | Name | Contains |
+|---|---|---|
+| 1 | Jobs & Objectives | User jobs, business objectives, secondary considerations |
+| 2 | Specifications | Functional specs, content requirements, system needs |
+| 3 | Interactions | Interaction flows and information architecture |
+| 4 | Interface Design | Screens and components that deliver each interaction |
+
+Entities live on one layer. Connections (`SUPPORTS`, `DERIVES_FROM`, `CONFLICTS_WITH`, `INFORMS`) may link entities on the same or an adjacent layer. The canvas shows the current layer in full with the adjacent layers ghosted behind it.
+
+## Stack
+
+- Next.js 15 (App Router) · React 19 · TypeScript · Tailwind v4
+- Konva / react-konva for the canvas
+- Zustand for client state (`src/stores`)
+- Prisma 6 + SQLite (`prisma/dev.db`, local only, not committed)
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env        # sets DATABASE_URL to the local sqlite file
+npx prisma migrate dev      # creates prisma/dev.db and applies migrations
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project layout
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/app/                 routes and API handlers (app/api/{projects,entities,connections})
+src/components/Canvas/   Konva canvas: LayerCanvas, EntityNode, ConnectionPath, minimap, grid, toolbar
+src/components/Projects/ project sidebar, grid, layer tabs
+src/components/Entity/   entity editor forms
+src/hooks/               keyboard shortcuts, clipboard
+src/stores/              zustand stores (entities, canvas viewport/selection)
+src/lib/api/             Prisma data-access functions used by the API routes
+src/lib/types.ts         shared entity/connection types
+prisma/schema.prisma     data model
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Canvas shortcuts
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Scroll to zoom, drag empty space (or hold Space) to pan, `0` to zoom-to-fit
+- Click / shift-click / drag-rectangle to select; drag to move selection
+- Alt-drag to duplicate; `Ctrl+C` / `Ctrl+V` / `Ctrl+D`; `Delete` to remove
+- Drag from an entity's edge anchor to another entity to create a connection

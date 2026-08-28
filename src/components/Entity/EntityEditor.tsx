@@ -8,7 +8,7 @@ interface EntityEditorProps {
   entity: EntityWithRelations | null
   isOpen: boolean
   onClose: () => void
-  onSave: (entityId: string, updates: any) => void
+  onSave: (entityId: string, updates: Partial<EntityWithRelations>) => void
   onDelete: (entityId: string) => void
 }
 

@@ -140,7 +140,7 @@ export function EntityNode({
         return JSON.parse(entity.tags) || []
       }
       if (Array.isArray(entity.tags)) {
-        return entity.tags
+        return entity.tags.filter((t): t is string => typeof t === 'string')
       }
       return []
     } catch {
@@ -160,7 +160,7 @@ export function EntityNode({
       onDragEnd={isInteractable ? handleDragEnd : undefined}
       onClick={isInteractable ? (e) => onClick(entity.id, e) : undefined}
       onDblClick={isInteractable ? () => onDoubleClick?.(entity.id) : undefined}
-      onTap={isInteractable ? (e) => onClick(entity.id, e) : undefined}
+      onTap={isInteractable ? (e) => onClick(entity.id, e as Konva.KonvaEventObject<MouseEvent>) : undefined}
       onDbltap={isInteractable ? () => onDoubleClick?.(entity.id) : undefined}
       onMouseEnter={isInteractable ? () => onMouseEnter?.(entity.id) : undefined}
       onMouseLeave={isInteractable ? () => onMouseLeave?.() : undefined}

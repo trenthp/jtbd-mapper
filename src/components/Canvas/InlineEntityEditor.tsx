@@ -9,7 +9,7 @@ interface InlineEntityEditorProps {
   position: { x: number, y: number }
   isOpen: boolean
   onClose: () => void
-  onSave: (entityId: string, updates: any) => void
+  onSave: (entityId: string, updates: Partial<EntityWithRelations>) => void
   onDelete: (entityId: string) => void
 }
 

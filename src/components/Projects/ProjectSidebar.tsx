@@ -1,5 +1,6 @@
 'use client'
 
+import { NewEntityInput } from '@/lib/types'
 import { useState } from 'react'
 import { Project } from '@prisma/client'
 import { X, Plus, User, Target, FileText, Settings, MousePointer, Layout, Navigation, Circle } from 'lucide-react'
@@ -9,7 +10,7 @@ import { LayerTabs } from '@/components/Projects/LayerTabs'
 interface ProjectSidebarProps {
   project: Project
   currentLayer: number
-  onCreateEntity: (entityData: any) => void
+  onCreateEntity: (entityData: NewEntityInput) => void
   onClose: () => void
   sidebarToggle?: React.ReactNode
   onLayerChange: (layer: number) => void
@@ -223,7 +224,6 @@ export function ProjectSidebar({ project, currentLayer, onCreateEntity, onClose,
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 bg-gray-50">
         <div className="text-xs text-gray-500 space-y-1">
-          <div>Framework: {project.framework}</div>
           <div>Layer: {currentLayer} of 4</div>
         </div>
       </div>

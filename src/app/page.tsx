@@ -31,7 +31,7 @@ export default function Home() {
 
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Getting Started</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="border-l-4 border-blue-500 pl-4">
               <h4 className="font-medium text-gray-900">Layer 1: Jobs & Objectives</h4>
               <p className="text-sm text-gray-600 mt-1">
@@ -45,9 +45,15 @@ export default function Home() {
               </p>
             </div>
             <div className="border-l-4 border-purple-500 pl-4">
-              <h4 className="font-medium text-gray-900">Layer 3: Design</h4>
+              <h4 className="font-medium text-gray-900">Layer 3: Interactions</h4>
               <p className="text-sm text-gray-600 mt-1">
                 Map interactions and information architecture
+              </p>
+            </div>
+            <div className="border-l-4 border-orange-500 pl-4">
+              <h4 className="font-medium text-gray-900">Layer 4: Interface Design</h4>
+              <p className="text-sm text-gray-600 mt-1">
+                Design the screens and components that deliver each interaction
               </p>
             </div>
           </div>

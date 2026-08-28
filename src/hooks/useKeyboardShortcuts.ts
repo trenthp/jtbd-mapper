@@ -103,20 +103,12 @@ export function useKeyboardShortcuts({
       case 'z':
         if (cmdKey && !shiftKey) {
           preventDefault()
-          if (onUndo) {
-            onUndo()
-          } else {
-            console.log('Undo triggered (not implemented yet)')
-          }
+          onUndo?.()
         }
         // Redo (Ctrl+Shift+Z)
         else if (cmdKey && shiftKey) {
           preventDefault()
-          if (onRedo) {
-            onRedo()
-          } else {
-            console.log('Redo triggered (not implemented yet)')
-          }
+          onRedo?.()
         }
         break
 
@@ -124,11 +116,7 @@ export function useKeyboardShortcuts({
       case 'y':
         if (cmdKey) {
           preventDefault()
-          if (onRedo) {
-            onRedo()
-          } else {
-            console.log('Redo triggered (not implemented yet)')
-          }
+          onRedo?.()
         }
         break
 

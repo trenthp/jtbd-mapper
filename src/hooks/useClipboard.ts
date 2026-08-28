@@ -86,7 +86,6 @@ export function useClipboard() {
         }
 
         const newEntity = await response.json()
-        console.log('Created pasted entity:', newEntity)
         addEntity(newEntity.entity || newEntity)
         return newEntity.entity || newEntity
       })
@@ -137,7 +136,6 @@ export function useClipboard() {
         }
 
         const newEntity = await response.json()
-        console.log('Created duplicate entity:', newEntity)
         addEntity(newEntity.entity || newEntity)
         return newEntity.entity || newEntity
       })
