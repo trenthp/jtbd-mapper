@@ -201,6 +201,7 @@ export default function ProjectPage() {
             onCreateEntity={handleCreateEntity}
             onClose={() => setSidebarOpen(false)}
             onLayerChange={setCurrentLayer}
+            onNavigateToEntity={handleNavigateToEntity}
             entityCounts={{
               1: Array.from(entities.values()).filter(e => e.layer === 1).length,
               2: Array.from(entities.values()).filter(e => e.layer === 2).length,

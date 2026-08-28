@@ -1,7 +1,7 @@
 // Thin typed wrappers around the REST API. All canvas mutations go through
 // here so that the undo/redo commands in lib/commands.ts can replay them.
 import { EntityWithRelations, LayerConnectionWithEntities } from '@/lib/types'
-import { ConnectionType, ConnectionStrength, Prisma } from '@prisma/client'
+import { ConnectionType, ConnectionStrength, Prisma, ReconciliationStatus } from '@prisma/client'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -52,10 +52,13 @@ export const api = {
     }).then(r => r.entity),
 
   updateEntity: (id: string, updates: Partial<EntityWithRelations>) =>
-    request<{ entity: EntityWithRelations }>(`/api/entities/${id}`, {
+    request<{ entity: EntityWithRelations; affected: ReconciliationStatus[] }>(`/api/entities/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
-    }).then(r => r.entity),
+    }),
+
+  markReviewed: (id: string) =>
+    request<{ success: true }>(`/api/entities/${id}/reconcile`, { method: 'POST' }).then(() => undefined),
 
   deleteEntity: (id: string) =>
     request<{ success: true }>(`/api/entities/${id}`, { method: 'DELETE' }).then(() => undefined),

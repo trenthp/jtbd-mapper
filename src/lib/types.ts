@@ -148,7 +148,7 @@ export interface NavigationDesignData {
 }
 
 // Union type for all entity data types
-export type EntityData = 
+export type EntityData =
   | UserJobData
   | BusinessObjectiveData
   | SecondaryConsiderationData
@@ -253,6 +253,7 @@ export interface EntityStore {
   updateConnection: (connectionId: string, changes: Partial<LayerConnection>) => void
   removeConnection: (connectionId: string) => void
   setReconciliationState: (entityId: string, state: ReconciliationStatus) => void
+  clearReconciliationState: (entityId: string) => void
 
   // Bulk operations
   removeEntities: (entityIds: string[]) => void

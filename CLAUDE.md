@@ -15,5 +15,7 @@ See README.md for the product overview and layout.
 
 ## Known state
 - No auth; `createdBy` is a hardcoded `'user'`.
-- `ChangeEvent`, `ImpactAnalysis`, `ConflictResolution`, `ProjectSnapshot`, `ReconciliationStatus` exist in the schema but have no API or UI yet.
+- Undo/redo: every canvas mutation goes through `src/lib/commands.ts` (which calls `src/lib/client/api.ts`) and pushes a Command onto `historyStore`. New mutations should follow that pattern rather than calling `fetch` directly.
+- Change tracking lives in `src/lib/api/reconciliation.ts`, hooked into `PUT /api/entities/[id]`. A `ReconciliationStatus` row exists only while an entity is flagged. `ConflictResolution` and `ProjectSnapshot` are still schema-only.
+- Canvas logic is split into `src/components/Canvas/hooks/*` and pure helpers in `src/lib/canvas/geometry.ts`; keep `LayerCanvas.tsx` as composition + JSX.
 - `prisma/dev.db` is local and gitignored.

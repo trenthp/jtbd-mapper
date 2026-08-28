@@ -13,6 +13,10 @@ An interactive canvas for mapping Jobs-to-be-Done across four design layers, wit
 
 Entities live on one layer. Connections (`SUPPORTS`, `DERIVES_FROM`, `CONFLICTS_WITH`, `INFORMS`) may link entities on the same or an adjacent layer. The canvas shows the current layer in full with the adjacent layers ghosted behind it.
 
+## Change tracking
+
+Editing an entity's content (title, description, data, tags, status) records a `ChangeEvent` and flags every entity reachable through connections to a *higher* layer as `DOWNSTREAM_IMPACT`. Flagged entities get a dotted amber border on the canvas and appear in the sidebar's **Review** tab, where they can be jumped to or marked as reviewed. Editing a flagged entity clears its own flag. Moving entities never counts as a change. With one entity selected, the Review tab also previews what a change to it would affect.
+
 ## Stack
 
 - Next.js 15 (App Router) · React 19 · TypeScript · Tailwind v4

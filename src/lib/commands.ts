@@ -175,6 +175,12 @@ export async function moveEntities(moves: EntityMove[]) {
   })
 }
 
+/** Clear an entity's reconciliation flag. Not recorded in history. */
+export async function markReviewed(id: string) {
+  await api.markReviewed(id)
+  store().clearReconciliationState(id)
+}
+
 /** Edit an entity's fields (title, description, data, tags, ...). */
 export async function updateEntity(id: string, updates: Partial<EntityWithRelations>) {
   const before = store().entities.get(id)
@@ -184,7 +190,7 @@ export async function updateEntity(id: string, updates: Partial<EntityWithRelati
     Object.assign(previous, { [key]: before[key] })
   }
   const apply = async (patch: Partial<EntityWithRelations>) => {
-    const saved = await api.updateEntity(id, patch)
+    const { entity: saved, affected } = await api.updateEntity(id, patch)
     const current = store().entities.get(id)
     // Keep whatever position the canvas currently shows.
     store().updateEntity(id, {
@@ -192,6 +198,10 @@ export async function updateEntity(id: string, updates: Partial<EntityWithRelati
       positionX: current?.positionX ?? saved.positionX,
       positionY: current?.positionY ?? saved.positionY,
     })
+    // The edited entity's own flag is cleared server-side; downstream ones are raised
+    if (saved.reconciliationStatus) store().setReconciliationState(id, saved.reconciliationStatus)
+    else store().clearReconciliationState(id)
+    affected.forEach(status => store().setReconciliationState(status.entityId, status))
   }
   await apply(updates)
   history().push({

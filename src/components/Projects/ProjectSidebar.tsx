@@ -6,6 +6,8 @@ import { Project } from '@prisma/client'
 import { X, Plus, User, Target, FileText, Settings, MousePointer, Layout, Navigation, Circle } from 'lucide-react'
 import { CanvasToolbar } from '@/components/Canvas/CanvasToolbar'
 import { LayerTabs } from '@/components/Projects/LayerTabs'
+import { ReviewPanel } from '@/components/Projects/ReviewPanel'
+import { useEntityStore } from '@/stores/entityStore'
 
 interface ProjectSidebarProps {
   project: Project
@@ -15,10 +17,12 @@ interface ProjectSidebarProps {
   sidebarToggle?: React.ReactNode
   onLayerChange: (layer: number) => void
   entityCounts: Record<number, number>
+  onNavigateToEntity: (entityId: string) => void
 }
 
-export function ProjectSidebar({ project, currentLayer, onCreateEntity, onClose, sidebarToggle, onLayerChange, entityCounts }: ProjectSidebarProps) {
-  const [activeTab, setActiveTab] = useState<'entities' | 'tools'>('entities')
+export function ProjectSidebar({ project, currentLayer, onCreateEntity, onClose, sidebarToggle, onLayerChange, entityCounts, onNavigateToEntity }: ProjectSidebarProps) {
+  const [activeTab, setActiveTab] = useState<'entities' | 'tools' | 'review'>('entities')
+  const flaggedCount = useEntityStore(s => s.reconciliationStates.size)
 
   const getEntitiesForLayer = (layer: number) => {
     switch (layer) {
@@ -126,6 +130,19 @@ export function ProjectSidebar({ project, currentLayer, onCreateEntity, onClose,
         >
           Tools
         </button>
+        <button
+          onClick={() => setActiveTab('review')}
+          className={`flex-1 py-2 px-4 text-sm font-medium inline-flex items-center justify-center gap-1.5 ${
+            activeTab === 'review'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Review
+          {flaggedCount > 0 && (
+            <span className="bg-amber-100 text-amber-800 text-xs px-1.5 py-0.5 rounded-full">{flaggedCount}</span>
+          )}
+        </button>
       </div>
 
       {/* Content */}
@@ -200,6 +217,8 @@ export function ProjectSidebar({ project, currentLayer, onCreateEntity, onClose,
               </div>
             )}
           </div>
+        ) : activeTab === 'review' ? (
+          <ReviewPanel onNavigateToEntity={onNavigateToEntity} />
         ) : (
           <div className="p-4">
             <CanvasToolbar />
