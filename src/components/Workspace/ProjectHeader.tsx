@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Project } from '@prisma/client'
 import {
-  ArrowLeft, PanelLeft, Undo2, Redo2, MoreHorizontal, Pencil, Trash2, AlertTriangle, Maximize2, Download,
+  ArrowLeft, Undo2, Redo2, MoreHorizontal, Pencil, Trash2, AlertTriangle, Maximize2, Download,
 } from 'lucide-react'
 import { useHistoryStore } from '@/stores/historyStore'
 import { useCanvasStore } from '@/stores/canvasStore'
@@ -28,7 +28,6 @@ export function ProjectHeader({ project, onProjectChange, onDeleteRequest, onExp
   const viewActions = useCanvasStore(s => s.viewActions)
   const clearSelection = useCanvasStore(s => s.clearSelection)
   const flaggedCount = useEntityStore(s => s.reconciliationStates.size)
-  const toggleOutline = useUIStore(s => s.toggleOutline)
   const openInspector = useUIStore(s => s.openInspector)
 
   const [menuOpen, setMenuOpen] = useState(false)
@@ -70,9 +69,6 @@ export function ProjectHeader({ project, onProjectChange, onDeleteRequest, onExp
     <header className="bg-white border-b border-gray-200 flex items-center gap-2 px-2 lg:px-3 py-1.5 z-30">
       {/* Left cluster */}
       <div className="flex items-center gap-1 min-w-0 flex-1">
-        <button onClick={toggleOutline} className={iconBtn} title="Toggle outline" aria-label="Toggle outline">
-          <PanelLeft className="h-5 w-5" />
-        </button>
         <button onClick={() => router.push('/')} className={iconBtn} title="Back to projects" aria-label="Back to projects">
           <ArrowLeft className="h-5 w-5" />
         </button>

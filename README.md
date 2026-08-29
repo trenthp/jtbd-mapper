@@ -36,7 +36,7 @@ npm test                    # vitest: pure geometry and impact-analysis helpers
 ## Workspace layout
 
 - **Top bar** — back, project name (click to rename), undo/redo, zoom, Review badge, and a `⋯` menu (rename, export JSON, delete project).
-- **Layer nav** (floating, top-left of the canvas) — shows the current layer; the layers icon expands it into a vertical list of all four with entity/flag counts. The eye icon shows/hides the ghosted adjacent layers.
+- **Layer nav** (floating, top-left of the canvas) — shows the current layer; the layers icon expands it into a vertical list of all four with entity/flag counts, plus an eye toggle for the ghosted adjacent layers. The outline toggle sits directly beneath it.
 - **Tool strip** (floating, bottom-centre) — Select (V), Pan (H), Connect (C), Add (creates the layer's default type; the chevron picks another), snap-to-grid, zoom to fit.
 - **Outline** (left) — searchable list of the current layer's entities grouped by type; searching spans all layers.
 - **Inspector** (right) — the selected entity (all fields, connections, review state, what depends on it), the selected connection (type, strength, rationale), or the review queue when nothing is selected.
