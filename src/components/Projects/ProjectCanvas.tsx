@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { LayerCanvas } from '@/components/Canvas/LayerCanvas'
 import { CanvasToolStrip } from '@/components/Workspace/CanvasToolStrip'
+import { LayerNav } from '@/components/Workspace/LayerNav'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { ENTITY_WIDTH, ENTITY_HEIGHT } from '@/lib/canvas/geometry'
 
@@ -53,6 +54,7 @@ export function ProjectCanvas({ currentLayer, onCreateEntity, onCreateConnection
       ) : (
         <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-500">Loading canvas…</div>
       )}
+      <LayerNav />
       <CanvasToolStrip onCreateEntity={createAtCenter} />
     </div>
   )

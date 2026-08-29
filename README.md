@@ -35,8 +35,9 @@ npm test                    # vitest: pure geometry and impact-analysis helpers
 
 ## Workspace layout
 
-- **Top bar** — back, project name (click to rename), layer switcher with entity/flag counts, undo/redo, zoom, Review badge, and a `⋯` menu (rename, export JSON, delete project).
-- **Tool strip** (floating, bottom-centre) — Select (V), Pan (H), Connect (C), Add (creates the layer's default type; the chevron picks another), snap-to-grid, show/hide adjacent layers, zoom to fit.
+- **Top bar** — back, project name (click to rename), undo/redo, zoom, Review badge, and a `⋯` menu (rename, export JSON, delete project).
+- **Layer nav** (floating, top-left of the canvas) — shows the current layer; the layers icon expands it into a vertical list of all four with entity/flag counts. The eye icon shows/hides the ghosted adjacent layers.
+- **Tool strip** (floating, bottom-centre) — Select (V), Pan (H), Connect (C), Add (creates the layer's default type; the chevron picks another), snap-to-grid, zoom to fit.
 - **Outline** (left) — searchable list of the current layer's entities grouped by type; searching spans all layers.
 - **Inspector** (right) — the selected entity (all fields, connections, review state, what depends on it), the selected connection (type, strength, rationale), or the review queue when nothing is selected.
 
@@ -46,7 +47,7 @@ On screens narrower than 1024px the outline becomes a drawer, the inspector a bo
 
 ```
 src/app/                 routes and API handlers (app/api/{projects,entities,connections})
-src/components/Workspace/ header, layer switcher, tool strip, outline, inspector, responsive layout
+src/components/Workspace/ header, layer nav, tool strip, outline, inspector, responsive layout
 src/components/Canvas/   Konva canvas: LayerCanvas + hooks, EntityNode, ConnectionPath, minimap, grid
 src/components/Projects/ project grid, canvas host, review queue
 src/hooks/               keyboard shortcuts, clipboard, media queries

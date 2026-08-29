@@ -6,7 +6,6 @@ import { Project } from '@prisma/client'
 import {
   ArrowLeft, PanelLeft, Undo2, Redo2, MoreHorizontal, Pencil, Trash2, AlertTriangle, Maximize2, Download,
 } from 'lucide-react'
-import { LayerSwitcher } from './LayerSwitcher'
 import { useHistoryStore } from '@/stores/historyStore'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useEntityStore } from '@/stores/entityStore'
@@ -68,9 +67,9 @@ export function ProjectHeader({ project, onProjectChange, onDeleteRequest, onExp
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 flex flex-wrap items-center gap-x-2 gap-y-1 px-2 lg:px-3 py-1.5 z-30">
+    <header className="bg-white border-b border-gray-200 flex items-center gap-2 px-2 lg:px-3 py-1.5 z-30">
       {/* Left cluster */}
-      <div className="flex items-center gap-1 min-w-0 flex-1 lg:flex-none">
+      <div className="flex items-center gap-1 min-w-0 flex-1">
         <button onClick={toggleOutline} className={iconBtn} title="Toggle outline" aria-label="Toggle outline">
           <PanelLeft className="h-5 w-5" />
         </button>
@@ -99,11 +98,6 @@ export function ProjectHeader({ project, onProjectChange, onDeleteRequest, onExp
             <Pencil className="h-3.5 w-3.5 text-gray-400 opacity-0 group-hover:opacity-100 shrink-0" />
           </button>
         )}
-      </div>
-
-      {/* Layer switcher: own row on mobile, centred on desktop */}
-      <div className="order-last w-full lg:order-none lg:w-auto lg:flex-1 flex justify-start lg:justify-center min-w-0">
-        <LayerSwitcher />
       </div>
 
       {/* Right cluster */}

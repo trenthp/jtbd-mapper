@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { MousePointer2, Hand, Zap, Plus, ChevronUp, Grid3x3, Layers, Maximize2 } from 'lucide-react'
+import { MousePointer2, Hand, Zap, Plus, ChevronUp, Grid3x3, Maximize2 } from 'lucide-react'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { defaultTypeForLayer, typesForLayer, EntityTypeDef } from '@/lib/entityTypes'
 
@@ -20,13 +20,11 @@ export function CanvasToolStrip({ onCreateEntity }: CanvasToolStripProps) {
   const currentTool = useCanvasStore(s => s.currentTool)
   const connectionMode = useCanvasStore(s => s.connectionMode)
   const gridSettings = useCanvasStore(s => s.gridSettings)
-  const showAdjacent = useCanvasStore(s => s.showAdjacentLayers)
   const currentLayer = useCanvasStore(s => s.currentLayer)
   const viewActions = useCanvasStore(s => s.viewActions)
   const setCurrentTool = useCanvasStore(s => s.setCurrentTool)
   const setConnectionMode = useCanvasStore(s => s.setConnectionMode)
   const setGridSettings = useCanvasStore(s => s.setGridSettings)
-  const setShowAdjacent = useCanvasStore(s => s.setShowAdjacentLayers)
 
   const [typesOpen, setTypesOpen] = useState(false)
   const typesRef = useRef<HTMLDivElement>(null)
@@ -121,15 +119,6 @@ export function CanvasToolStrip({ onCreateEntity }: CanvasToolStripProps) {
           aria-pressed={gridSettings.snapToGrid}
         >
           <Grid3x3 className="h-5 w-5" />
-        </button>
-        <button
-          onClick={() => setShowAdjacent(!showAdjacent)}
-          className={btn(showAdjacent)}
-          title={showAdjacent ? 'Adjacent layers: shown' : 'Adjacent layers: hidden'}
-          aria-label="Toggle adjacent layers"
-          aria-pressed={showAdjacent}
-        >
-          <Layers className="h-5 w-5" />
         </button>
         <button onClick={() => viewActions.zoomToFit?.()} className={btn(false)} title="Zoom to fit (Ctrl+0)" aria-label="Zoom to fit">
           <Maximize2 className="h-5 w-5" />
