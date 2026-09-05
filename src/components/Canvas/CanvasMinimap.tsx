@@ -1,8 +1,8 @@
 'use client'
 
-import Konva from 'konva'
 import { useMemo } from 'react'
 import { Stage, Layer, Group, Rect, Circle } from 'react-konva'
+import { KonvaEventObject } from 'konva/lib/Node'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useEntityStore } from '@/stores/entityStore'
 import { EntityWithRelations } from '@/lib/types'
@@ -70,8 +70,9 @@ export function CanvasMinimap({
   }, [viewport, canvasWidth, canvasHeight, minX, minY, minimapScale])
 
   // Handle minimap click to navigate
-  const handleMinimapClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    const pointer = e.target.getStage()?.getPointerPosition()
+  const handleMinimapClick = (e: KonvaEventObject<MouseEvent>) => {
+    const stage = e.target.getStage()
+    const pointer = stage.getPointerPosition()
     if (!pointer) return
 
     // Convert minimap coordinates to world coordinates
