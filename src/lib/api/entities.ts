@@ -1,14 +1,15 @@
 import { prisma } from '@/lib/prisma'
-import { Entity, EntityStatus } from '@prisma/client'
+import { EntityStatus, Prisma } from '@prisma/client'
 import { EntityWithRelations } from '@/lib/types'
 
 export async function createEntity(data: {
+  id?: string
   projectId: string
   type: string
   layer: number
   title: string
   description?: string
-  data: Record<string, unknown>
+  data: Prisma.InputJsonValue
   positionX: number
   positionY: number
   tags?: string[]
@@ -32,8 +33,8 @@ export async function createEntity(data: {
 }
 
 export async function updateEntity(
-  entityId: string, 
-  data: Partial<Entity>
+  entityId: string,
+  data: Prisma.EntityUncheckedUpdateInput
 ): Promise<EntityWithRelations> {
   const entity = await prisma.entity.update({
     where: { id: entityId },
@@ -88,13 +89,13 @@ export async function getEntitiesByProject(projectId: string): Promise<EntityWit
 }
 
 export async function getEntitiesByLayer(
-  projectId: string, 
+  projectId: string,
   layer: number
 ): Promise<EntityWithRelations[]> {
   const entities = await prisma.entity.findMany({
-    where: { 
+    where: {
       projectId,
-      layer 
+      layer
     },
     include: {
       project: true,
@@ -148,10 +149,10 @@ export async function duplicateEntity(
       layer: originalEntity.layer,
       title: `${originalEntity.title} (Copy)`,
       description: originalEntity.description,
-      data: originalEntity.data,
+      data: originalEntity.data ?? Prisma.JsonNull,
       positionX: newPosition.x,
       positionY: newPosition.y,
-      tags: originalEntity.tags,
+      tags: originalEntity.tags ?? [],
       status: originalEntity.status
     },
     include: {

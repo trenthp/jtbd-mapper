@@ -1,4 +1,4 @@
-import { Entity, LayerConnection, ReconciliationStatus, Project } from '@prisma/client'
+import { Entity, LayerConnection, ReconciliationStatus, Project, Prisma } from '@prisma/client'
 
 // Extended types with relationships
 export interface EntityWithRelations extends Entity {
@@ -6,13 +6,26 @@ export interface EntityWithRelations extends Entity {
   toConnections: LayerConnection[]
   reconciliationStatus?: ReconciliationStatus | null
   project: Project
-  tags: unknown // JSON field that can be string[] or string
+  tags: Prisma.JsonValue // JSON column, normally string[]
 }
 
 export interface LayerConnectionWithEntities extends LayerConnection {
   fromEntity: Entity
   toEntity: Entity
   project: Project
+}
+
+// Payload accepted by POST /api/entities
+export interface NewEntityInput {
+  projectId?: string
+  type: string
+  layer?: number
+  title: string
+  description?: string
+  data?: Record<string, unknown>
+  positionX?: number
+  positionY?: number
+  tags?: string[]
 }
 
 // Frontend-specific types
@@ -135,7 +148,7 @@ export interface NavigationDesignData {
 }
 
 // Union type for all entity data types
-export type EntityData = 
+export type EntityData =
   | UserJobData
   | BusinessObjectiveData
   | SecondaryConsiderationData
@@ -240,6 +253,7 @@ export interface EntityStore {
   updateConnection: (connectionId: string, changes: Partial<LayerConnection>) => void
   removeConnection: (connectionId: string) => void
   setReconciliationState: (entityId: string, state: ReconciliationStatus) => void
+  clearReconciliationState: (entityId: string) => void
 
   // Bulk operations
   removeEntities: (entityIds: string[]) => void
@@ -265,6 +279,10 @@ export interface CanvasStore {
   currentTool: CanvasTool
   isPanMode: boolean
   currentLayer: number
+  /** Render the layers above/below the current one, dimmed */
+  showAdjacentLayers: boolean
+  /** Imperative view controls, registered by the mounted canvas */
+  viewActions: { zoomIn?: () => void; zoomOut?: () => void; zoomToFit?: () => void; panTo?: (x: number, y: number) => void }
 
   // Actions
   setViewport: (viewport: Partial<Viewport>) => void
@@ -277,6 +295,8 @@ export interface CanvasStore {
   setCurrentTool: (tool: CanvasTool) => void
   setIsPanMode: (isPanMode: boolean) => void
   setCurrentLayer: (layer: number) => void
+  setShowAdjacentLayers: (show: boolean) => void
+  setViewActions: (actions: CanvasStore['viewActions']) => void
 
   // Selection helpers
   selectEntity: (entityId: string, multiSelect?: boolean) => void

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Entity, LayerConnection, ReconciliationStatus } from '@prisma/client'
+import { Entity, LayerConnection, ReconciliationStatus, Prisma } from '@prisma/client'
 import { EntityWithRelations, LayerConnectionWithEntities, EntityStore } from '@/lib/types'
 
 export const useEntityStore = create<EntityStore>((set, get) => ({
@@ -11,7 +11,10 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
     set((state) => {
       const newEntities = new Map(state.entities)
       newEntities.set(entity.id, entity)
-      return { entities: newEntities }
+      const newReconciliationStates = new Map(state.reconciliationStates)
+      if (entity.reconciliationStatus) newReconciliationStates.set(entity.id, entity.reconciliationStatus)
+      else newReconciliationStates.delete(entity.id)
+      return { entities: newEntities, reconciliationStates: newReconciliationStates }
     })
   },
 
@@ -31,20 +34,20 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
       const newEntities = new Map(state.entities)
       const newConnections = new Map(state.connections)
       const newReconciliationStates = new Map(state.reconciliationStates)
-      
+
       // Remove entity
       newEntities.delete(entityId)
-      
+
       // Remove related connections
       Array.from(newConnections.values()).forEach(connection => {
         if (connection.fromEntityId === entityId || connection.toEntityId === entityId) {
           newConnections.delete(connection.id)
         }
       })
-      
+
       // Remove reconciliation state
       newReconciliationStates.delete(entityId)
-      
+
       return {
         entities: newEntities,
         connections: newConnections,
@@ -77,6 +80,15 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
       const newConnections = new Map(state.connections)
       newConnections.delete(connectionId)
       return { connections: newConnections }
+    })
+  },
+
+  clearReconciliationState: (entityId: string) => {
+    set((currentState) => {
+      if (!currentState.reconciliationStates.has(entityId)) return {}
+      const newReconciliationStates = new Map(currentState.reconciliationStates)
+      newReconciliationStates.delete(entityId)
+      return { reconciliationStates: newReconciliationStates }
     })
   },
 
@@ -195,7 +207,7 @@ export const createEntityWithDefaults = (
   version: 1
 })
 
-export const getDefaultDataForType = (type: string): Record<string, unknown> => {
+export const getDefaultDataForType = (type: string): Prisma.JsonObject => {
   switch (type) {
     case 'user_job':
       return {
