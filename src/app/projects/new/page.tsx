@@ -57,7 +57,7 @@ export default function NewProjectPage() {
           
           <h1 className="text-3xl font-bold text-gray-900">Create New Project</h1>
           <p className="mt-2 text-gray-600">
-            Set up a new Jobs-to-be-Done mapping project
+            Set up a new Layer Map project
           </p>
         </div>
 

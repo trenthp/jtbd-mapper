@@ -1,4 +1,4 @@
-# JTBD Mapper
+# Layer Map
 
 An interactive canvas for mapping Jobs-to-be-Done across four design layers, with typed connections between layers so you can trace a job all the way down to the interface that serves it.
 
@@ -22,13 +22,14 @@ Editing an entity's content (title, description, data, tags, status) records a `
 - Next.js 15 (App Router) · React 19 · TypeScript · Tailwind v4
 - Konva / react-konva for the canvas
 - Zustand for client state (`src/stores`)
-- Prisma 6 + SQLite (`prisma/dev.db`, local only, not committed)
+- Prisma 6 + Postgres (Neon on Vercel; any Postgres locally)
 
 ## Getting started
 
 ```bash
-npm install
-npx prisma migrate dev      # creates prisma/dev.db (path is set in prisma/schema.prisma)
+cp .env.example .env         # then set DATABASE_URL to your Postgres connection string
+npm install                 # postinstall runs prisma generate
+npx prisma migrate dev      # applies prisma/migrations to that database
 npm run dev                 # http://localhost:3000
 npm test                    # vitest: pure geometry and impact-analysis helpers
 ```

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JTBD Mapper",
+  title: "Layer Map",
   description: "Map Jobs-to-be-Done across design layers",
 };
 
