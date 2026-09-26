@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { CanvasStore, Viewport, DragState, SelectionState, ConnectionMode, RectangleSelection, SnappingState, GridSettings, CanvasTool } from '@/lib/types'
 
-export const useCanvasStore = create<CanvasStore>((set, get) => ({
+export const useCanvasStore = create<CanvasStore>((set) => ({
   viewport: {
     x: 0,
     y: 0,
@@ -170,7 +170,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }))
   },
 
-  selectEntitiesInRectangle: (rect: { x: number, y: number, width: number, height: number }) => {
+  selectEntitiesInRectangle: (_rect: { x: number, y: number, width: number, height: number }) => {
     // This will be called with entities from the LayerCanvas component
     // The actual entity filtering logic will be in the LayerCanvas
     // This method exists to satisfy the interface - implementation will be in canvas component

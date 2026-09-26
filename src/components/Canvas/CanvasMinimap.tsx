@@ -2,10 +2,9 @@
 
 import Konva from 'konva'
 import { useMemo } from 'react'
-import { Stage, Layer, Group, Rect, Circle } from 'react-konva'
+import { Stage, Layer, Rect, Circle } from 'react-konva'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useEntityStore } from '@/stores/entityStore'
-import { EntityWithRelations } from '@/lib/types'
 
 interface CanvasMinimapProps {
   width?: number
@@ -27,7 +26,7 @@ export function CanvasMinimap({
 
   // Calculate minimap scale and bounds
   const entitiesArray = Array.from(entities.values())
-  const { minX, maxX, minY, maxY, minimapScale } = useMemo(() => {
+  const { minX, minY, minimapScale } = useMemo(() => {
     if (entitiesArray.length === 0) {
       return {
         minX: 0,
