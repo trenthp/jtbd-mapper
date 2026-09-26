@@ -48,7 +48,7 @@ export function CanvasGrid({ gridSettings, viewport, canvasWidth, canvasHeight }
     }
 
     return { vertical, horizontal }
-  }, [gridSettings.isVisible, gridSettings.gridSize, viewport, canvasWidth, canvasHeight])
+  }, [gridSettings, viewport, canvasWidth, canvasHeight])
 
   if (!gridSettings.isVisible) {
     return null

@@ -153,7 +153,7 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
     })
   },
 
-  duplicateEntity: (entityId: string, offset: { x: number; y: number } = { x: 20, y: 20 }) => {
+  duplicateEntity: (_entityId: string, _offset: { x: number; y: number } = { x: 20, y: 20 }) => {
     // This method is deprecated - use the clipboard duplicate function instead
     console.warn('entityStore.duplicateEntity is deprecated, use useClipboard().duplicate instead')
     return null

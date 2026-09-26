@@ -1,6 +1,6 @@
 'use client'
 
-import { Line, Text, Group, Circle } from 'react-konva'
+import { Line, Group } from 'react-konva'
 import Konva from 'konva'
 import { LayerConnectionWithEntities } from '@/lib/types'
 import { useEntityStore } from '@/stores/entityStore'
@@ -14,7 +14,7 @@ interface ConnectionPathProps {
   currentLayer?: number
 }
 
-export function ConnectionPath({ connection, isSelected, isDraggedConnection, onNavigateToEntity, onClick, currentLayer }: ConnectionPathProps) {
+export function ConnectionPath({ connection, isSelected, isDraggedConnection, onClick, currentLayer }: ConnectionPathProps) {
   const { entities } = useEntityStore()
   
   // Get current entity positions from the store instead of cached connection entities
@@ -25,9 +25,6 @@ export function ConnectionPath({ connection, isSelected, isDraggedConnection, on
   if (!fromEntity || !toEntity) {
     return null
   }
-
-  // Check if this is a cross-layer connection
-  const isCrossLayer = fromEntity.layer !== toEntity.layer
 
   // Use static entity positions (no real-time dragging updates)
   const fromPos = {

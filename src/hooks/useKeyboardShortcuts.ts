@@ -2,7 +2,6 @@
 
 import { useEffect, useCallback } from 'react'
 import { useCanvasStore } from '@/stores/canvasStore'
-import { useEntityStore } from '@/stores/entityStore'
 
 interface KeyboardShortcutsProps {
   onDelete?: () => void
@@ -47,7 +46,7 @@ export function useKeyboardShortcuts({
     // Don't trigger if disabled
     if (!isEnabled) return
 
-    const { key, ctrlKey, metaKey, altKey, shiftKey } = event
+    const { key, ctrlKey, metaKey, shiftKey } = event
     const cmdKey = ctrlKey || metaKey // Support both Ctrl and Cmd
 
 
@@ -216,7 +215,7 @@ export function useKeyboardShortcuts({
 
   return {
     // Helper function to check if a key combination is currently pressed
-    isShortcutPressed: (keys: string[]) => {
+    isShortcutPressed: (_keys: string[]) => {
       // This would need additional state tracking if needed
       return false
     }
