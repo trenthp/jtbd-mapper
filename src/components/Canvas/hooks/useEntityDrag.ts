@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useEntityStore } from '@/stores/entityStore'
 import { moveEntities, EntityMove } from '@/lib/commands'
-import { calculateSnapping, Point } from '@/lib/canvas/geometry'
+import { calculateSnapping, entityHeight, Point } from '@/lib/canvas/geometry'
 import { snapToGrid } from '../CanvasGrid'
 import { EntityWithRelations } from '@/lib/types'
 
@@ -42,7 +42,8 @@ export function useEntityDrag({ currentEntities, editingEntityId, onAltDragStart
     }
     if (snappingState.isEnabled) {
       const others = currentEntities.filter(e => e.id !== entityId)
-      return calculateSnapping(p, others, snappingState.snapDistance)
+      const dragged = currentEntities.find(e => e.id === entityId)
+      return calculateSnapping(p, others, snappingState.snapDistance, dragged ? entityHeight(dragged) : undefined)
     }
     return { snappedPosition: p, guides: [] }
   }, [gridSettings, snappingState.isEnabled, snappingState.snapDistance, currentEntities])
