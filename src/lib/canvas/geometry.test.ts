@@ -3,6 +3,7 @@ import type { EntityWithRelations } from '@/lib/types'
 import {
   ENTITY_WIDTH,
   ENTITY_HEIGHT,
+  entityHeight,
   entityCenter,
   getConnectionPointPosition,
   entitiesIntersectingRect,
@@ -33,6 +34,14 @@ describe('entityCenter / getConnectionPointPosition', () => {
 
   it('unknown anchor falls back to the centre', () => {
     expect(getConnectionPointPosition(e, 'weird')).toEqual(entityCenter(e))
+  })
+
+  it('anchors follow the card height when the user has added fields', () => {
+    const tall = { ...at('t', 100, 200), type: 'user_job', data: { jobStatement: 'x', priority: 'high', frequency: 'daily', userSegment: 's', successCriteria: ['a', 'b'] } }
+    const h = entityHeight(tall)
+    expect(h).toBeGreaterThan(ENTITY_HEIGHT)
+    expect(getConnectionPointPosition(tall, 'bottom')).toEqual({ x: 200, y: 200 + h })
+    expect(entityCenter(tall).y).toBe(200 + h / 2)
   })
 })
 
@@ -83,6 +92,13 @@ describe('calculateSnapping', () => {
     const r = calculateSnapping({ x: 500 - ENTITY_WIDTH / 2 + 3, y: 520 - 4 }, [anchor], 10)
     expect(r.snappedPosition).toEqual({ x: 400, y: 520 })
     expect(r.guides.map(g => g.type).sort()).toEqual(['horizontal', 'vertical'])
+  })
+
+  it('uses the dragged card\'s own height for bottom and centre snapping', () => {
+    // anchor bottom is 520; a 200-high dragged card snaps its bottom there at y=320
+    const r = calculateSnapping({ x: 100, y: 323 }, [anchor], 10, 200)
+    expect(r.snappedPosition.y).toBe(320)
+    expect(r.guides).toEqual([{ id: 'guide-0', type: 'horizontal', position: 520, entities: ['anchor'] }])
   })
 
   it('the nearest neighbour wins on each axis and only one guide per axis is emitted', () => {

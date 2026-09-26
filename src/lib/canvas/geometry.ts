@@ -1,9 +1,16 @@
 // Pure geometry helpers for the canvas. No React, no stores — easy to test.
 import type Konva from 'konva'
 import { EntityWithRelations, SnapGuide } from '@/lib/types'
+import { CARD_WIDTH, CARD_MIN_HEIGHT, entityHeight, type CardEntity } from './cardLayout'
 
-export const ENTITY_WIDTH = 200
-export const ENTITY_HEIGHT = 120
+export const ENTITY_WIDTH = CARD_WIDTH
+/** Height of a card with no optional content; real cards grow with content
+ *  (see `entityHeight` in cardLayout.ts). */
+export const ENTITY_HEIGHT = CARD_MIN_HEIGHT
+export { entityHeight }
+
+/** What the geometry helpers read from an entity. */
+export type Positioned = CardEntity & { positionX: number; positionY: number }
 
 export interface Point {
   x: number
@@ -26,22 +33,23 @@ export function worldToStage(stage: Konva.Stage, world: Point): Point {
   }
 }
 
-export function entityCenter(entity: { positionX: number; positionY: number }): Point {
-  return { x: entity.positionX + ENTITY_WIDTH / 2, y: entity.positionY + ENTITY_HEIGHT / 2 }
+export function entityCenter(entity: Positioned): Point {
+  return { x: entity.positionX + ENTITY_WIDTH / 2, y: entity.positionY + entityHeight(entity) / 2 }
 }
 
 export type ConnectionPoint = 'left' | 'right' | 'top' | 'bottom' | string
 
-export function getConnectionPointPosition(entity: EntityWithRelations, point: ConnectionPoint): Point {
+export function getConnectionPointPosition(entity: Positioned, point: ConnectionPoint): Point {
+  const h = entityHeight(entity)
   switch (point) {
     case 'left':
-      return { x: entity.positionX, y: entity.positionY + ENTITY_HEIGHT / 2 }
+      return { x: entity.positionX, y: entity.positionY + h / 2 }
     case 'right':
-      return { x: entity.positionX + ENTITY_WIDTH, y: entity.positionY + ENTITY_HEIGHT / 2 }
+      return { x: entity.positionX + ENTITY_WIDTH, y: entity.positionY + h / 2 }
     case 'top':
       return { x: entity.positionX + ENTITY_WIDTH / 2, y: entity.positionY }
     case 'bottom':
-      return { x: entity.positionX + ENTITY_WIDTH / 2, y: entity.positionY + ENTITY_HEIGHT }
+      return { x: entity.positionX + ENTITY_WIDTH / 2, y: entity.positionY + h }
     default:
       return entityCenter(entity)
   }
@@ -64,7 +72,7 @@ export function entitiesIntersectingRect(
       e.positionX < right &&
       e.positionX + ENTITY_WIDTH > left &&
       e.positionY < bottom &&
-      e.positionY + ENTITY_HEIGHT > top
+      e.positionY + entityHeight(e) > top
     )
     .map(e => e.id)
 }
@@ -77,12 +85,14 @@ export interface SnapResult {
 /**
  * Snap `position` (top-left of the dragged entity) to the edges and centres
  * of `others` when within `snapDistance`. On each axis the nearest
- * candidate wins; ties go to the earlier entity.
+ * candidate wins; ties go to the earlier entity. `draggedHeight` is the
+ * dragged card's own height (cards grow with their content).
  */
 export function calculateSnapping(
   position: Point,
   others: EntityWithRelations[],
-  snapDistance: number
+  snapDistance: number,
+  draggedHeight: number = ENTITY_HEIGHT
 ): SnapResult {
   let snappedX = position.x
   let snappedY = position.y
@@ -95,9 +105,9 @@ export function calculateSnapping(
     left: position.x,
     right: position.x + ENTITY_WIDTH,
     top: position.y,
-    bottom: position.y + ENTITY_HEIGHT,
+    bottom: position.y + draggedHeight,
     centerX: position.x + ENTITY_WIDTH / 2,
-    centerY: position.y + ENTITY_HEIGHT / 2,
+    centerY: position.y + draggedHeight / 2,
   }
 
   // Each candidate: [dragged edge, target edge, resulting x/y for the entity's top-left]
@@ -124,14 +134,15 @@ export function calculateSnapping(
 
   for (const entity of others) {
     const top = entity.positionY
-    const bottom = entity.positionY + ENTITY_HEIGHT
-    const centerY = entity.positionY + ENTITY_HEIGHT / 2
+    const h = entityHeight(entity)
+    const bottom = entity.positionY + h
+    const centerY = entity.positionY + h / 2
     const candidates: Array<[number, number, number]> = [
       [dragged.top, top, top],
-      [dragged.bottom, bottom, bottom - ENTITY_HEIGHT],
-      [dragged.centerY, centerY, centerY - ENTITY_HEIGHT / 2],
+      [dragged.bottom, bottom, bottom - draggedHeight],
+      [dragged.centerY, centerY, centerY - draggedHeight / 2],
       [dragged.top, bottom, bottom],
-      [dragged.bottom, top, top - ENTITY_HEIGHT],
+      [dragged.bottom, top, top - draggedHeight],
     ]
     for (const [from, to, result] of candidates) {
       const d = Math.abs(from - to)

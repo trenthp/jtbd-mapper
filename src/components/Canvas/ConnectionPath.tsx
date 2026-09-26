@@ -4,6 +4,7 @@ import { Line, Group } from 'react-konva'
 import Konva from 'konva'
 import { LayerConnectionWithEntities } from '@/lib/types'
 import { useEntityStore } from '@/stores/entityStore'
+import { getConnectionPointPosition } from '@/lib/canvas/geometry'
 
 interface ConnectionPathProps {
   connection: LayerConnectionWithEntities
@@ -27,24 +28,16 @@ export function ConnectionPath({ connection, isSelected, isDraggedConnection, on
     return null
   }
 
-  // Use static entity positions (no real-time dragging updates)
-  const fromPos = {
-    x: fromEntity.positionX || 0,
-    y: fromEntity.positionY || 0
-  }
-  const toPos = {
-    x: toEntity.positionX || 0,
-    y: toEntity.positionY || 0
-  }
-
-  const startX = fromPos.x + 200 // entity width
-  const startY = fromPos.y + 60  // entity height / 2
-  const endX = toPos.x
-  const endY = toPos.y + 60
+  // Static entity positions (no real-time dragging updates); anchors follow
+  // each card's own height.
+  const start = getConnectionPointPosition(fromEntity, 'right')
+  const end = getConnectionPointPosition(toEntity, 'left')
+  const { x: startX, y: startY } = start
+  const { x: endX, y: endY } = end
 
   // Simple straight line points
   const getLinePoints = (): number[] => {
-    return [startX, startY, endX, endY]
+    return [start.x, start.y, end.x, end.y]
   }
 
   // Simplified color scheme

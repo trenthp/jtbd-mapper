@@ -4,6 +4,9 @@ import { Group, Rect, Text, Circle } from 'react-konva'
 import Konva from 'konva'
 import { EntityWithRelations, EntityVisual } from '@/lib/types'
 import { typeDef } from '@/lib/entityTypes'
+import {
+  cardLayout, CARD_PADDING, TITLE_FONT, BODY_FONT, FIELD_FONT, TAG_FONT,
+} from '@/lib/canvas/cardLayout'
 
 interface EntityNodeProps {
   entity: EntityWithRelations
@@ -31,15 +34,19 @@ interface EntityNodeProps {
   onDragEnd: (entityId: string, position: { x: number, y: number }) => void
 }
 
-const ENTITY_WIDTH = 200
-const ENTITY_HEIGHT = 120
 const CORNER_RADIUS = 8
+const FONT = 'Arial'
 
+/**
+ * A card on the canvas. Deliberately minimal: title and description only,
+ * plus whichever optional fields (and tags) the user has added. Type is
+ * conveyed by the card colour; connection handles appear only in Connect
+ * mode.
+ */
 export function EntityNode({
   entity,
   visual,
   isSelected,
-  isDragging,
   isEditing = false,
   isInteractable = true,
   isConnectionMode = false,
@@ -97,23 +104,17 @@ export function EntityNode({
     }
   }
 
-  // Safely parse tags from JSON
-  const getTags = (): string[] => {
-    try {
-      if (typeof entity.tags === 'string') {
-        return JSON.parse(entity.tags) || []
-      }
-      if (Array.isArray(entity.tags)) {
-        return entity.tags.filter((t): t is string => typeof t === 'string')
-      }
-      return []
-    } catch {
-      return []
-    }
-  }
-
-  const tags = getTags()
   const def = typeDef(entity.type)
+  const layout = cardLayout(entity)
+  const { width, height } = layout
+  const innerWidth = width - CARD_PADDING * 2
+
+  const anchors: Array<{ point: string; x: number; y: number }> = [
+    { point: 'left', x: 0, y: height / 2 },
+    { point: 'right', x: width, y: height / 2 },
+    { point: 'top', x: width / 2, y: 0 },
+    { point: 'bottom', x: width / 2, y: height },
+  ]
 
   return (
     <Group
@@ -131,10 +132,10 @@ export function EntityNode({
       onMouseLeave={isInteractable ? () => onMouseLeave?.() : undefined}
       listening={isInteractable} // Disable all event listening for non-interactable entities
     >
-      {/* Main entity rectangle */}
+      {/* Card */}
       <Rect
-        width={ENTITY_WIDTH}
-        height={ENTITY_HEIGHT}
+        width={width}
+        height={height}
         fill={visual.backgroundColor || def.fill}
         stroke={isEditing ? "#3b82f6" : visual.borderColor} // Blue border when editing
         strokeWidth={isEditing ? 3 : (isSelected ? 3 : 2)}
@@ -152,166 +153,89 @@ export function EntityNode({
         shadowBlur={isEditing ? 12 : (isSelected ? 8 : (isHovered ? 6 : 4))}
         shadowOffset={isHovered ? { x: 0, y: 4 } : { x: 2, y: 2 }}
       />
-      
-      {/* Entity type indicator */}
-      <Rect
-        x={0}
-        y={0}
-        width={ENTITY_WIDTH}
-        height={24}
-        fill={visual.borderColor}
-        opacity={0.1}
-        cornerRadius={[CORNER_RADIUS, CORNER_RADIUS, 0, 0]}
-      />
-      
-      {/* Type label */}
+
+      {/* Title */}
       <Text
-        x={8}
-        y={6}
-        text={def.name}
-        fontSize={11}
-        fontFamily="Arial"
-        fill={visual.borderColor}
-        fontStyle="bold"
-      />
-      
-      {/* Layer indicator */}
-      <Circle
-        x={ENTITY_WIDTH - 20}
-        y={12}
-        radius={8}
-        fill={visual.borderColor}
-        opacity={0.88}
-      />
-      
-      <Text
-        x={ENTITY_WIDTH - 24}
-        y={8}
-        text={entity.layer.toString()}
-        fontSize={10}
-        fontFamily="Arial"
-        fill="white"
-        fontStyle="bold"
-        align="center"
-        width={8}
-      />
-      
-      {/* Entity title */}
-      <Text
-        x={8}
-        y={32}
+        x={CARD_PADDING}
+        y={layout.title.y}
+        width={innerWidth}
+        height={layout.title.height}
         text={entity.title}
-        fontSize={13}
-        fontFamily="Arial"
-        fill="#111827" // gray-900 - higher contrast
+        fontSize={TITLE_FONT.size}
+        lineHeight={TITLE_FONT.lineHeight}
+        fontFamily={FONT}
+        fill="#111827" // gray-900
         fontStyle="bold"
-        width={ENTITY_WIDTH - 16}
         wrap="word"
+        ellipsis
       />
-      
-      {/* Entity description */}
-      {entity.description && (
+
+      {/* Description */}
+      {layout.description && (
         <Text
-          x={8}
-          y={54}
-          text={entity.description}
-          fontSize={10}
-          fontFamily="Arial"
-          fill="#374151" // gray-700 - better contrast
-          width={ENTITY_WIDTH - 16}
+          x={CARD_PADDING}
+          y={layout.description.y}
+          width={innerWidth}
+          height={layout.description.height}
+          text={entity.description ?? ''}
+          fontSize={BODY_FONT.size}
+          lineHeight={BODY_FONT.lineHeight}
+          fontFamily={FONT}
+          fill="#374151" // gray-700
           wrap="word"
+          ellipsis
         />
       )}
-      
+
+      {/* Optional fields the user has added */}
+      {layout.fields.map(f => (
+        <Text
+          key={f.key}
+          x={CARD_PADDING}
+          y={f.y}
+          width={innerWidth}
+          height={f.lines * FIELD_FONT.size * FIELD_FONT.lineHeight}
+          text={`${f.label}: ${f.value}`}
+          fontSize={FIELD_FONT.size}
+          lineHeight={FIELD_FONT.lineHeight}
+          fontFamily={FONT}
+          fill="#4b5563" // gray-600
+          wrap="word"
+          ellipsis
+        />
+      ))}
+
       {/* Tags */}
-      {tags.length > 0 && (
+      {layout.tags && (
         <Text
-          x={8}
-          y={ENTITY_HEIGHT - 18}
-          text={`#${tags.slice(0, 3).join(' #')}${tags.length > 3 ? '...' : ''}`}
-          fontSize={9}
-          fontFamily="Arial"
-          fill="#6b7280" // gray-500 - improved contrast
-          width={ENTITY_WIDTH - 16}
-          wrap="word"
-          ellipsis={true}
+          x={CARD_PADDING}
+          y={layout.tags.y}
+          width={innerWidth}
+          height={TAG_FONT.size * TAG_FONT.lineHeight}
+          text={layout.tags.text}
+          fontSize={TAG_FONT.size}
+          lineHeight={TAG_FONT.lineHeight}
+          fontFamily={FONT}
+          fill="#6b7280" // gray-500
+          wrap="none"
+          ellipsis
         />
       )}
-      
-      {/* Editing indicator */}
-      {isEditing && (
-        <Text
-          x={ENTITY_WIDTH - 55}
-          y={6}
-          text="EDITING"
-          fontSize={8}
-          fontFamily="Arial"
-          fill="#3b82f6"
-          fontStyle="bold"
-          opacity={0.8}
+
+      {/* Connection handles: only while connecting */}
+      {isConnectionMode && anchors.map(a => (
+        <Circle
+          key={a.point}
+          x={a.x}
+          y={a.y}
+          radius={8}
+          fill={isConnectionTarget ? "#10b981" : visual.borderColor}
+          stroke="#ffffff"
+          strokeWidth={2}
+          onMouseEnter={() => onConnectionPointHover?.(entity.id, a.point)}
+          onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
         />
-      )}
-      
-      {/* Connection points - enhanced for connection mode */}
-      {(isSelected || isDragging || isConnectionMode) && (
-        <>
-          {/* Left connection point */}
-          <Circle
-            x={0}
-            y={ENTITY_HEIGHT / 2}
-            radius={isConnectionMode ? 8 : 5}
-            fill={isConnectionTarget ? "#10b981" : visual.borderColor}
-            stroke="#ffffff"
-            strokeWidth={isConnectionMode ? 2 : 1}
-            opacity={isConnectionMode ? 1.0 : 0.8}
-            onMouseEnter={() => onConnectionPointHover?.(entity.id, 'left')}
-            onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
-            listening={isConnectionMode}
-          />
-
-          {/* Right connection point */}
-          <Circle
-            x={ENTITY_WIDTH}
-            y={ENTITY_HEIGHT / 2}
-            radius={isConnectionMode ? 8 : 5}
-            fill={isConnectionTarget ? "#10b981" : visual.borderColor}
-            stroke="#ffffff"
-            strokeWidth={isConnectionMode ? 2 : 1}
-            opacity={isConnectionMode ? 1.0 : 0.8}
-            onMouseEnter={() => onConnectionPointHover?.(entity.id, 'right')}
-            onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
-            listening={isConnectionMode}
-          />
-
-          {/* Top connection point */}
-          <Circle
-            x={ENTITY_WIDTH / 2}
-            y={0}
-            radius={isConnectionMode ? 8 : 5}
-            fill={isConnectionTarget ? "#10b981" : visual.borderColor}
-            stroke="#ffffff"
-            strokeWidth={isConnectionMode ? 2 : 1}
-            opacity={isConnectionMode ? 1.0 : 0.8}
-            onMouseEnter={() => onConnectionPointHover?.(entity.id, 'top')}
-            onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
-            listening={isConnectionMode}
-          />
-
-          {/* Bottom connection point */}
-          <Circle
-            x={ENTITY_WIDTH / 2}
-            y={ENTITY_HEIGHT}
-            radius={isConnectionMode ? 8 : 5}
-            fill={isConnectionTarget ? "#10b981" : visual.borderColor}
-            stroke="#ffffff"
-            strokeWidth={isConnectionMode ? 2 : 1}
-            opacity={isConnectionMode ? 1.0 : 0.8}
-            onMouseEnter={() => onConnectionPointHover?.(entity.id, 'bottom')}
-            onMouseLeave={() => onConnectionPointLeave?.(entity.id)}
-            listening={isConnectionMode}
-          />
-        </>
-      )}
+      ))}
     </Group>
   )
 }

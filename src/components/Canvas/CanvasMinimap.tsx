@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 import { Stage, Layer, Rect, Circle } from 'react-konva'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useEntityStore } from '@/stores/entityStore'
+import { ENTITY_WIDTH, entityCenter, entityHeight } from '@/lib/canvas/geometry'
 
 interface CanvasMinimapProps {
   width?: number
@@ -39,9 +40,9 @@ export function CanvasMinimap({
 
     const padding = 200
     const minX = Math.min(...entitiesArray.map(e => e.positionX)) - padding
-    const maxX = Math.max(...entitiesArray.map(e => e.positionX + 200)) + padding // 200 = entity width
+    const maxX = Math.max(...entitiesArray.map(e => e.positionX + ENTITY_WIDTH)) + padding
     const minY = Math.min(...entitiesArray.map(e => e.positionY)) - padding
-    const maxY = Math.max(...entitiesArray.map(e => e.positionY + 120)) + padding // 120 = entity height
+    const maxY = Math.max(...entitiesArray.map(e => e.positionY + entityHeight(e))) + padding
 
     const contentWidth = maxX - minX
     const contentHeight = maxY - minY
@@ -126,8 +127,8 @@ export function CanvasMinimap({
           {entitiesArray.map(entity => (
             <Circle
               key={entity.id}
-              x={(entity.positionX + 100 - minX) * minimapScale} // +100 for entity center
-              y={(entity.positionY + 60 - minY) * minimapScale} // +60 for entity center
+              x={(entityCenter(entity).x - minX) * minimapScale}
+              y={(entityCenter(entity).y - minY) * minimapScale}
               radius={2}
               fill={getEntityColor(entity.type)}
               opacity={0.8}
