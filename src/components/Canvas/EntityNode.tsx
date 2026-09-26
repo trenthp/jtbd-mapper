@@ -3,6 +3,7 @@
 import { Group, Rect, Text, Circle } from 'react-konva'
 import Konva from 'konva'
 import { EntityWithRelations, EntityVisual } from '@/lib/types'
+import { typeDef } from '@/lib/entityTypes'
 
 interface EntityNodeProps {
   entity: EntityWithRelations
@@ -96,40 +97,6 @@ export function EntityNode({
     }
   }
 
-  // Get background color based on entity type
-  const getBackgroundColor = (type: string): string => {
-    switch (type) {
-      case 'user_job':
-        return '#dbeafe' // blue-100
-      case 'business_objective':
-        return '#fef3c7' // amber-100
-      case 'secondary_consideration':
-        return '#f3e8ff' // violet-100
-      case 'functional_spec':
-        return '#dcfce7' // green-100
-      case 'content_requirement':
-        return '#fce7f3' // pink-100
-      case 'system_requirement':
-        return '#e0f2fe' // sky-100
-      case 'interaction_spec':
-        return '#fef7ed' // orange-100
-      case 'information_architecture':
-        return '#f0f9ff' // sky-50
-      case 'interface_element':
-        return '#ecfdf5' // emerald-100
-      case 'navigation_design':
-        return '#fdf4ff' // fuchsia-50
-      default:
-        return '#f9fafb' // gray-50
-    }
-  }
-
-  // Get type label for display
-  const getTypeLabel = (type: string): string => {
-    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
-
-
   // Safely parse tags from JSON
   const getTags = (): string[] => {
     try {
@@ -146,6 +113,7 @@ export function EntityNode({
   }
 
   const tags = getTags()
+  const def = typeDef(entity.type)
 
   return (
     <Group
@@ -167,7 +135,7 @@ export function EntityNode({
       <Rect
         width={ENTITY_WIDTH}
         height={ENTITY_HEIGHT}
-        fill={visual.backgroundColor || getBackgroundColor(entity.type)}
+        fill={visual.backgroundColor || def.fill}
         stroke={isEditing ? "#3b82f6" : visual.borderColor} // Blue border when editing
         strokeWidth={isEditing ? 3 : (isSelected ? 3 : 2)}
         dash={isEditing ? [] : getDashPattern(visual.borderStyle)} // Solid border when editing
@@ -200,7 +168,7 @@ export function EntityNode({
       <Text
         x={8}
         y={6}
-        text={getTypeLabel(entity.type)}
+        text={def.name}
         fontSize={11}
         fontFamily="Arial"
         fill={visual.borderColor}

@@ -95,48 +95,86 @@ export function useStageViewport(width: number, height: number) {
   }, [setViewport])
 
   // ---- pinch zoom (touch) ----
-  const pinch = useRef<{ dist: number; center: { x: number; y: number } } | null>(null)
-
-  const handleTouchMove = useCallback((e: Konva.KonvaEventObject<TouchEvent>) => {
+  // Native listeners rather than Konva's: Konva stops firing touchmove while
+  // a drag is in progress, so a pinch that begins with one finger panning
+  // would stall. The stage is transformed directly while pinching; React
+  // state and the store are only updated at a throttled rate and at the end,
+  // so a pinch doesn't re-render every entity on every move.
+  useEffect(() => {
     const stage = stageRef.current
-    const [t1, t2] = [e.evt.touches[0], e.evt.touches[1]]
-    if (!stage || !t1 || !t2) return
-    e.evt.preventDefault()
-    // Two fingers: stop any one-finger pan Konva started
-    if (stage.isDragging()) stage.stopDrag()
+    if (!stage) return
+    const el = stage.container()
+    let pinch: { dist: number; center: { x: number; y: number }; lastCommit: number } | null = null
 
-    const rect = stage.container().getBoundingClientRect()
-    const p1 = { x: t1.clientX - rect.left, y: t1.clientY - rect.top }
-    const p2 = { x: t2.clientX - rect.left, y: t2.clientY - rect.top }
-    const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
-    const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y)
-
-    if (!pinch.current) {
-      pinch.current = { dist, center }
-      return
-    }
-
-    const oldScale = stage.scaleX()
-    const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, oldScale * (dist / pinch.current.dist)))
-    // Keep the world point under the previous centre fixed, then follow the centre's movement
-    const worldCenter = {
-      x: (pinch.current.center.x - stage.x()) / oldScale,
-      y: (pinch.current.center.y - stage.y()) / oldScale,
-    }
-    stage.scale({ x: newScale, y: newScale })
-    stage.position({ x: center.x - worldCenter.x * newScale, y: center.y - worldCenter.y * newScale })
-    stage.batchDraw()
-    setStageScale(newScale)
-    pinch.current = { dist, center }
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    const stage = stageRef.current
-    if (pinch.current && stage) {
+    const commit = () => {
+      setStageScale(stage.scaleX())
       setViewport({ x: stage.x(), y: stage.y(), zoom: stage.scaleX() })
     }
-    pinch.current = null
+
+    const measure = (touches: TouchList) => {
+      const rect = el.getBoundingClientRect()
+      const p1 = { x: touches[0].clientX - rect.left, y: touches[0].clientY - rect.top }
+      const p2 = { x: touches[1].clientX - rect.left, y: touches[1].clientY - rect.top }
+      return {
+        center: { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 },
+        dist: Math.max(1, Math.hypot(p2.x - p1.x, p2.y - p1.y)),
+      }
+    }
+
+    // A second finger cancels whatever the first one started (stage pan or
+    // entity drag), including drags that haven't passed the drag threshold yet.
+    const stopDrags = () => {
+      Konva.DD._dragElements.forEach(elem => elem.node.stopDrag())
+    }
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length < 2) return
+      e.preventDefault()
+      stopDrags()
+      pinch = { ...measure(e.touches), lastCommit: performance.now() }
+    }
+
+    const onMove = (e: TouchEvent) => {
+      if (!pinch || e.touches.length < 2) return
+      e.preventDefault()
+      stopDrags()
+      const { center, dist } = measure(e.touches)
+      const oldScale = stage.scaleX()
+      const newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, oldScale * (dist / pinch.dist)))
+      // Keep the world point under the previous centre fixed, then follow the centre's movement
+      const world = {
+        x: (pinch.center.x - stage.x()) / oldScale,
+        y: (pinch.center.y - stage.y()) / oldScale,
+      }
+      stage.scale({ x: newScale, y: newScale })
+      stage.position({ x: center.x - world.x * newScale, y: center.y - world.y * newScale })
+      stage.batchDraw()
+
+      // Refresh the grid and anything else reading the store now and then
+      const now = performance.now()
+      const due = now - pinch.lastCommit > 120
+      pinch = { center, dist, lastCommit: due ? now : pinch.lastCommit }
+      if (due) commit()
+    }
+
+    const onEnd = (e: TouchEvent) => {
+      if (!pinch || e.touches.length >= 2) return
+      pinch = null
+      commit()
+    }
+
+    const opts = { capture: true, passive: false }
+    el.addEventListener('touchstart', onStart, opts)
+    el.addEventListener('touchmove', onMove, opts)
+    el.addEventListener('touchend', onEnd, opts)
+    el.addEventListener('touchcancel', onEnd, opts)
+    return () => {
+      el.removeEventListener('touchstart', onStart, opts)
+      el.removeEventListener('touchmove', onMove, opts)
+      el.removeEventListener('touchend', onEnd, opts)
+      el.removeEventListener('touchcancel', onEnd, opts)
+    }
   }, [setViewport])
 
-  return { stageRef, stageScale, viewport, zoomIn, zoomOut, zoomToFit, handleStageDragEnd, handleTouchMove, handleTouchEnd }
+  return { stageRef, stageScale, viewport, zoomIn, zoomOut, zoomToFit, handleStageDragEnd }
 }

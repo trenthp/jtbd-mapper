@@ -6,7 +6,8 @@ import { Project } from '@prisma/client'
 import { Trash2 } from 'lucide-react'
 import { EntityWithRelations, LayerConnectionWithEntities } from '@/lib/types'
 import { createEntity, createConnection } from '@/lib/commands'
-import { getDefaultDataForType, useEntityStore } from '@/stores/entityStore'
+import { useEntityStore } from '@/stores/entityStore'
+import { typeDef } from '@/lib/entityTypes'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { useUIStore } from '@/stores/uiStore'
@@ -79,8 +80,8 @@ export default function ProjectPage() {
         projectId,
         type,
         layer: currentLayer,
-        title: `New ${type.replace(/_/g, ' ')}`,
-        data: getDefaultDataForType(type),
+        title: `New ${typeDef(type).name.toLowerCase()}`,
+        data: {},
         positionX: position.x,
         positionY: position.y,
       })

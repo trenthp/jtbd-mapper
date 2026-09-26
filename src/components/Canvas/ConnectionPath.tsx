@@ -11,10 +11,11 @@ interface ConnectionPathProps {
   isDraggedConnection?: boolean
   onNavigateToEntity?: (entityId: string) => void
   onClick: (connectionId: string, e: Konva.KonvaEventObject<MouseEvent>) => void
+  onDoubleClick?: (connectionId: string) => void
   currentLayer?: number
 }
 
-export function ConnectionPath({ connection, isSelected, isDraggedConnection, onClick, currentLayer }: ConnectionPathProps) {
+export function ConnectionPath({ connection, isSelected, isDraggedConnection, onClick, onDoubleClick, currentLayer }: ConnectionPathProps) {
   const { entities } = useEntityStore()
   
   // Get current entity positions from the store instead of cached connection entities
@@ -139,6 +140,8 @@ export function ConnectionPath({ connection, isSelected, isDraggedConnection, on
           opacity={opacity}
           onClick={(e) => onClick(connection.id, e)}
           onTap={(e) => onClick(connection.id, e as Konva.KonvaEventObject<MouseEvent>)}
+          onDblClick={() => onDoubleClick?.(connection.id)}
+          onDbltap={() => onDoubleClick?.(connection.id)}
         />
       )}
     </Group>

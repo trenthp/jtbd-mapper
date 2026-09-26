@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { Entity, LayerConnection, ReconciliationStatus, Prisma } from '@prisma/client'
+import { Entity, LayerConnection, ReconciliationStatus } from '@prisma/client'
 import { EntityWithRelations, LayerConnectionWithEntities, EntityStore } from '@/lib/types'
+import { typeDef } from '@/lib/entityTypes'
 
 export const useEntityStore = create<EntityStore>((set, get) => ({
   entities: new Map(),
@@ -196,9 +197,9 @@ export const createEntityWithDefaults = (
 ): Partial<Entity> => ({
   type,
   layer,
-  title: `New ${type.replace('_', ' ')}`,
+  title: `New ${typeDef(type).name.toLowerCase()}`,
   description: '',
-  data: getDefaultDataForType(type),
+  data: {},
   positionX: position.x,
   positionY: position.y,
   tags: [],
@@ -206,84 +207,3 @@ export const createEntityWithDefaults = (
   status: 'ACTIVE',
   version: 1
 })
-
-export const getDefaultDataForType = (type: string): Prisma.JsonObject => {
-  switch (type) {
-    case 'user_job':
-      return {
-        type: 'functional',
-        jobStatement: '',
-        userSegment: '',
-        context: { when: [], where: [], why: [] },
-        successCriteria: [],
-        painPoints: [],
-        currentSolutions: [],
-        priority: 'medium',
-        frequency: 'weekly'
-      }
-    case 'business_objective':
-      return {
-        category: 'revenue',
-        metric: '',
-        stakeholder: ''
-      }
-    case 'secondary_consideration':
-      return {
-        category: 'constraint',
-        impact: 'medium'
-      }
-    case 'functional_spec':
-      return {
-        specType: 'feature',
-        acceptanceCriteria: [],
-        businessRules: [],
-        dependencies: [],
-        priority: 'should-have',
-        effort: 'm'
-      }
-    case 'content_requirement':
-      return {
-        contentType: 'copy',
-        purpose: '',
-        audience: []
-      }
-    case 'system_requirement':
-      return {
-        systemType: 'api',
-        technology: [],
-        performance: [],
-        security: [],
-        scalability: []
-      }
-    case 'interaction_spec':
-      return {
-        interactionType: 'user-flow',
-        actor: '',
-        trigger: '',
-        steps: []
-      }
-    case 'information_architecture':
-      return {
-        structureType: 'hierarchy',
-        elements: [],
-        relationships: []
-      }
-    case 'interface_element':
-      return {
-        elementType: 'component',
-        functionality: [],
-        content: [],
-        interactions: [],
-        states: []
-      }
-    case 'navigation_design':
-      return {
-        navType: 'primary',
-        structure: 'hierarchical',
-        elements: [],
-        behavior: []
-      }
-    default:
-      return {}
-  }
-}
