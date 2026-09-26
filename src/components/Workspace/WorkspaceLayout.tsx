@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { PencilLine } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -35,7 +34,7 @@ export function WorkspaceLayout({ header, canvas, onNavigateToEntity }: Workspac
   // Start with the outline closed on small screens
   useEffect(() => { if (isMobile) setOutlineOpen(false) }, [isMobile, setOutlineOpen])
 
-  // Desktop: the inspector follows the selection; mobile: opened explicitly
+  // Desktop: the inspector follows the selection; mobile: opened by double-tap
   const showInspector = isMobile ? inspectorOpen : selectionCount > 0 || inspectorPinned
 
   const handleCloseInspector = () => {
@@ -71,17 +70,6 @@ export function WorkspaceLayout({ header, canvas, onNavigateToEntity }: Workspac
         {/* Canvas */}
         <main className="flex-1 relative min-w-0">
           {canvas}
-
-          {/* Mobile: a way into the inspector once something is selected */}
-          {isMobile && !inspectorOpen && selectionCount > 0 && (
-            <button
-              onClick={() => openInspector()}
-              className="absolute right-3 bottom-3 z-20 safe-bottom inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-gray-900 text-white text-sm font-medium shadow-lg"
-            >
-              <PencilLine className="h-4 w-4" />
-              {selectionCount === 1 ? 'Details' : `${selectionCount} selected`}
-            </button>
-          )}
         </main>
 
         {/* Inspector: column on desktop, bottom sheet on mobile */}

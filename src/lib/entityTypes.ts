@@ -3,7 +3,7 @@
 // inspector, and landing page.
 import type { LucideIcon } from 'lucide-react'
 import {
-  User, Target, FileText, Settings, Database, MousePointer, Layout, Navigation, Box,
+  User, Target, FileText, Settings, Database, MousePointer, Layout, Navigation, Box, StickyNote,
 } from 'lucide-react'
 
 export interface LayerDef {
@@ -43,7 +43,10 @@ export interface EntityTypeDef {
   icon: LucideIcon
   /** Tailwind text colour class for icons */
   color: string
-  /** Fields inside the entity's `data` JSON, in display order */
+  /** Card fill on the canvas */
+  fill: string
+  /** Optional fields inside the entity's `data` JSON, in display order. New
+   *  entities start with none; the inspector adds them on request. */
   fields: FieldDef[]
 }
 
@@ -54,7 +57,7 @@ const list = (key: string, label: string, placeholder?: string): FieldDef => ({ 
 
 export const ENTITY_TYPES: EntityTypeDef[] = [
   {
-    type: 'user_job', name: 'User Job', layer: 1, icon: User, color: 'text-blue-600',
+    type: 'user_job', name: 'User Job', layer: 1, icon: User, color: 'text-blue-600', fill: '#dbeafe',
     fields: [
       area('jobStatement', 'Job statement', 'When I…, I want to…, so I can…'),
       select('type', 'Job type', ['functional', 'emotional', 'social']),
@@ -67,7 +70,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'business_objective', name: 'Business Objective', layer: 1, icon: Target, color: 'text-amber-600',
+    type: 'business_objective', name: 'Business Objective', layer: 1, icon: Target, color: 'text-amber-600', fill: '#fef3c7',
     fields: [
       select('category', 'Category', ['revenue', 'cost', 'risk', 'experience', 'operational']),
       text('metric', 'Metric'),
@@ -77,7 +80,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'secondary_consideration', name: 'Secondary Consideration', layer: 1, icon: FileText, color: 'text-violet-600',
+    type: 'secondary_consideration', name: 'Secondary Consideration', layer: 1, icon: FileText, color: 'text-violet-600', fill: '#f3e8ff',
     fields: [
       select('category', 'Category', ['constraint', 'assumption', 'dependency', 'risk']),
       select('impact', 'Impact', ['high', 'medium', 'low']),
@@ -85,7 +88,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'functional_spec', name: 'Functional Spec', layer: 2, icon: Settings, color: 'text-green-600',
+    type: 'functional_spec', name: 'Functional Spec', layer: 2, icon: Settings, color: 'text-green-600', fill: '#dcfce7',
     fields: [
       select('specType', 'Spec type', ['feature', 'capability', 'integration', 'constraint']),
       select('priority', 'Priority', ['must-have', 'should-have', 'could-have', 'wont-have']),
@@ -96,7 +99,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'content_requirement', name: 'Content Requirement', layer: 2, icon: FileText, color: 'text-pink-600',
+    type: 'content_requirement', name: 'Content Requirement', layer: 2, icon: FileText, color: 'text-pink-600', fill: '#fce7f3',
     fields: [
       select('contentType', 'Content type', ['copy', 'image', 'video', 'data', 'document']),
       area('purpose', 'Purpose'),
@@ -108,7 +111,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'system_requirement', name: 'System Requirement', layer: 2, icon: Database, color: 'text-sky-600',
+    type: 'system_requirement', name: 'System Requirement', layer: 2, icon: Database, color: 'text-sky-600', fill: '#e0f2fe',
     fields: [
       select('systemType', 'System type', ['database', 'api', 'service', 'integration']),
       list('technology', 'Technology'),
@@ -118,7 +121,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'interaction_spec', name: 'Interaction Spec', layer: 3, icon: MousePointer, color: 'text-orange-600',
+    type: 'interaction_spec', name: 'Interaction Spec', layer: 3, icon: MousePointer, color: 'text-orange-600', fill: '#ffedd5',
     fields: [
       select('interactionType', 'Interaction type', ['user-flow', 'user-story', 'use-case', 'scenario']),
       text('actor', 'Actor'),
@@ -129,7 +132,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'information_architecture', name: 'Information Architecture', layer: 3, icon: Layout, color: 'text-sky-600',
+    type: 'information_architecture', name: 'Information Architecture', layer: 3, icon: Layout, color: 'text-sky-600', fill: '#f0f9ff',
     fields: [
       select('structureType', 'Structure', ['hierarchy', 'taxonomy', 'choreography', 'ecosystem']),
       list('elements', 'Elements'),
@@ -138,7 +141,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'interface_element', name: 'Interface Element', layer: 4, icon: Layout, color: 'text-emerald-600',
+    type: 'interface_element', name: 'Interface Element', layer: 4, icon: Layout, color: 'text-emerald-600', fill: '#ecfdf5',
     fields: [
       select('elementType', 'Element type', ['page', 'component', 'pattern', 'template']),
       list('functionality', 'Functionality'),
@@ -148,7 +151,7 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
     ],
   },
   {
-    type: 'navigation_design', name: 'Navigation Design', layer: 4, icon: Navigation, color: 'text-fuchsia-600',
+    type: 'navigation_design', name: 'Navigation Design', layer: 4, icon: Navigation, color: 'text-fuchsia-600', fill: '#fdf4ff',
     fields: [
       select('navType', 'Navigation type', ['primary', 'secondary', 'utility', 'contextual']),
       select('structure', 'Structure', ['linear', 'hierarchical', 'hub', 'web']),
@@ -158,18 +161,18 @@ export const ENTITY_TYPES: EntityTypeDef[] = [
   },
 ]
 
-const GENERIC: EntityTypeDef = { type: 'entity', name: 'Entity', layer: 0, icon: Box, color: 'text-gray-500', fields: [] }
+/** A blank sticky: title and description only, usable on any layer and
+ *  convertible to one of that layer's types later. */
+export const STICKY: EntityTypeDef = { type: 'note', name: 'Sticky', layer: 0, icon: StickyNote, color: 'text-yellow-600', fill: '#fef9c3', fields: [] }
+
+const GENERIC: EntityTypeDef = { type: 'entity', name: 'Entity', layer: 0, icon: Box, color: 'text-gray-500', fill: '#f9fafb', fields: [] }
 
 export function typesForLayer(layer: number): EntityTypeDef[] {
   return ENTITY_TYPES.filter(t => t.layer === layer)
 }
 
-/** The type created by a plain "add" on a layer: the first listed for it. */
-export function defaultTypeForLayer(layer: number): EntityTypeDef {
-  return typesForLayer(layer)[0] ?? GENERIC
-}
-
 export function typeDef(type: string): EntityTypeDef {
+  if (type === STICKY.type) return STICKY
   return ENTITY_TYPES.find(t => t.type === type) ?? { ...GENERIC, name: formatTypeName(type) }
 }
 

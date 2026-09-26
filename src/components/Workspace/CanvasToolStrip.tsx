@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MousePointer2, Hand, Zap, Plus, ChevronUp, Grid3x3, Maximize2 } from 'lucide-react'
 import { useCanvasStore } from '@/stores/canvasStore'
-import { defaultTypeForLayer, typesForLayer, EntityTypeDef } from '@/lib/entityTypes'
+import { STICKY, typesForLayer, EntityTypeDef } from '@/lib/entityTypes'
 
 interface CanvasToolStripProps {
   /** Create an entity of `type` at the centre of the current view */
@@ -27,11 +27,11 @@ export function CanvasToolStrip({ onCreateEntity }: CanvasToolStripProps) {
   const setGridSettings = useCanvasStore(s => s.setGridSettings)
 
   const [typesOpen, setTypesOpen] = useState(false)
-  const typesRef = useRef<HTMLDivElement>(null)
+  const stripRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!typesOpen) return
     const close = (e: PointerEvent) => {
-      if (!typesRef.current?.contains(e.target as Node)) setTypesOpen(false)
+      if (!stripRef.current?.contains(e.target as Node)) setTypesOpen(false)
     }
     document.addEventListener('pointerdown', close)
     return () => document.removeEventListener('pointerdown', close)
@@ -51,15 +51,14 @@ export function CanvasToolStrip({ onCreateEntity }: CanvasToolStripProps) {
     setCurrentTool({ type: 'select', cursor: next ? 'crosshair' : 'default' })
   }
 
-  const defaultType = defaultTypeForLayer(currentLayer)
-  const types = typesForLayer(currentLayer)
+  const types = [STICKY, ...typesForLayer(currentLayer)]
   const create = (t: EntityTypeDef) => { setTypesOpen(false); onCreateEntity(t.type) }
 
   const selectActive = currentTool.type === 'select' && !connectionMode.isActive
 
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 bottom-3 lg:bottom-4 z-20 safe-bottom pointer-events-none">
-      <div className="pointer-events-auto flex items-center gap-1 p-1 bg-white/95 backdrop-blur border border-gray-200 rounded-xl shadow-lg">
+    <div className="absolute left-1/2 -translate-x-1/2 bottom-3 lg:bottom-4 z-20 w-max safe-bottom pointer-events-none">
+      <div ref={stripRef} className="relative pointer-events-auto flex items-center gap-1 p-1 bg-white/95 backdrop-blur border border-gray-200 rounded-xl shadow-lg">
         <button onClick={selectTool} className={btn(selectActive)} title="Select (V)" aria-label="Select tool" aria-pressed={selectActive}>
           <MousePointer2 className="h-5 w-5" />
         </button>
@@ -72,12 +71,12 @@ export function CanvasToolStrip({ onCreateEntity }: CanvasToolStripProps) {
 
         <div className="w-px h-6 bg-gray-200 mx-0.5" />
 
-        {/* Add: primary click creates the layer's default type; chevron picks a type */}
-        <div className="relative flex items-center" ref={typesRef}>
+        {/* Add: primary click creates a blank sticky; chevron picks a layer type */}
+        <div className="flex items-center">
           <button
-            onClick={() => create(defaultType)}
+            onClick={() => create(STICKY)}
             className="inline-flex items-center gap-1.5 h-11 lg:h-10 pl-3 pr-2 rounded-l-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium"
-            title={`Add ${defaultType.name} (Ctrl+Shift+N)`}
+            title="Add sticky (Ctrl+Shift+N)"
           >
             <Plus className="h-5 w-5" />
             <span className="hidden sm:inline">Add</span>
@@ -91,22 +90,6 @@ export function CanvasToolStrip({ onCreateEntity }: CanvasToolStripProps) {
           >
             <ChevronUp className={`h-4 w-4 transition-transform ${typesOpen ? 'rotate-180' : ''}`} />
           </button>
-          {typesOpen && (
-            <div className="absolute bottom-full left-0 mb-2 w-60 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
-              <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">Add to layer {currentLayer}</div>
-              {types.map(t => (
-                <button
-                  key={t.type}
-                  onClick={() => create(t)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
-                >
-                  <t.icon className={`h-4 w-4 ${t.color}`} />
-                  {t.name}
-                  {t.type === defaultType.type && <span className="ml-auto text-xs text-gray-400">default</span>}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="w-px h-6 bg-gray-200 mx-0.5" />
@@ -123,6 +106,23 @@ export function CanvasToolStrip({ onCreateEntity }: CanvasToolStripProps) {
         <button onClick={() => viewActions.zoomToFit?.()} className={btn(false)} title="Zoom to fit (Ctrl+0)" aria-label="Zoom to fit">
           <Maximize2 className="h-5 w-5" />
         </button>
+
+        {typesOpen && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 max-w-[calc(100vw-1.5rem)] max-h-[60dvh] overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+            <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">Add to layer {currentLayer}</div>
+            {types.map(t => (
+              <button
+                key={t.type}
+                onClick={() => create(t)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+              >
+                <t.icon className={`h-4 w-4 ${t.color}`} />
+                {t.name}
+                {t === STICKY && <span className="ml-auto text-xs text-gray-400">blank</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

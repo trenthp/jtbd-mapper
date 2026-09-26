@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, ArrowDownRight, ArrowLeft, ArrowRight, Check, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArrowDownRight, ArrowLeft, ArrowRight, Check, Plus, Trash2, X } from 'lucide-react'
 import { useEntityStore } from '@/stores/entityStore'
 import { useCanvasStore } from '@/stores/canvasStore'
 import { updateEntity, deleteSelection, markReviewed } from '@/lib/commands'
 import { downstreamOf } from '@/lib/impact'
-import { typeDef, typesForLayer, ENTITY_STATUSES, FieldDef, formatTypeName } from '@/lib/entityTypes'
+import { typeDef, typesForLayer, ENTITY_STATUSES, FieldDef, formatTypeName, STICKY } from '@/lib/entityTypes'
 import { EntityWithRelations } from '@/lib/types'
 
 interface EntityInspectorProps {
@@ -44,6 +44,11 @@ function tagsToString(tags: unknown): string {
   return ''
 }
 
+function hasValue(v: unknown): boolean {
+  if (Array.isArray(v)) return v.length > 0
+  return v !== undefined && v !== null && v !== ''
+}
+
 function listToString(v: unknown): string {
   return Array.isArray(v) ? v.filter(x => typeof x === 'string').join('\n') : ''
 }
@@ -55,6 +60,8 @@ export function EntityInspector({ entity, onNavigateToEntity }: EntityInspectorP
   const selectConnection = useCanvasStore(s => s.selectConnection)
   const clearSelection = useCanvasStore(s => s.clearSelection)
   const [busy, setBusy] = useState(false)
+  // Optional fields the user has added but not filled in yet
+  const [added, setAdded] = useState<Set<string>>(new Set())
 
   const def = typeDef(entity.type)
   const data = (entity.data && typeof entity.data === 'object' && !Array.isArray(entity.data) ? entity.data : {}) as Record<string, unknown>
@@ -63,6 +70,18 @@ export function EntityInspector({ entity, onNavigateToEntity }: EntityInspectorP
     try { await updateEntity(entity.id, patch) } catch (error) { console.error('Failed to save entity:', error) }
   }
   const saveData = (key: string, value: unknown) => save({ data: { ...data, [key]: value } as EntityWithRelations['data'] })
+  const removeField = (key: string) => {
+    setAdded(s => { const n = new Set(s); n.delete(key); return n })
+    if (key in data) {
+      const rest = { ...data }
+      delete rest[key]
+      save({ data: rest as EntityWithRelations['data'] })
+    }
+  }
+
+  const shownFields = def.fields.filter(f => hasValue(data[f.key]) || added.has(f.key))
+  const availableFields = def.fields.filter(f => !shownFields.includes(f))
+  const layerTypes = typesForLayer(entity.layer)
 
   const links = useMemo(() =>
     Array.from(connections.values())
@@ -147,11 +166,12 @@ export function EntityInspector({ entity, onNavigateToEntity }: EntityInspectorP
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className={label}>Type</label>
-            <select value={entity.type} onChange={e => save({ type: e.target.value })} className={input}>
-              {!typesForLayer(entity.layer).some(t => t.type === entity.type) && (
+            <select value={entity.type} onChange={e => { setAdded(new Set()); save({ type: e.target.value }) }} className={input}>
+              <option value={STICKY.type}>{STICKY.name}</option>
+              {entity.type !== STICKY.type && !layerTypes.some(t => t.type === entity.type) && (
                 <option value={entity.type}>{formatTypeName(entity.type)}</option>
               )}
-              {typesForLayer(entity.layer).map(t => <option key={t.type} value={t.type}>{t.name}</option>)}
+              {layerTypes.map(t => <option key={t.type} value={t.type}>{t.name}</option>)}
             </select>
           </div>
           <div>
@@ -180,13 +200,39 @@ export function EntityInspector({ entity, onNavigateToEntity }: EntityInspectorP
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
             <def.icon className={`h-3.5 w-3.5 ${def.color}`} /> {def.name} details
           </h3>
-          {def.fields.map(f => (
+          {shownFields.map(f => (
             <div key={f.key}>
-              <label className={label}>{f.label}</label>
+              <div className="flex items-center justify-between">
+                <label className={label}>{f.label}</label>
+                <button
+                  onClick={() => removeField(f.key)}
+                  className="-mt-1 p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                  title={`Remove ${f.label.toLowerCase()}`}
+                  aria-label={`Remove ${f.label}`}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
               {renderField(f)}
             </div>
           ))}
+          {availableFields.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {availableFields.map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setAdded(s => new Set(s).add(f.key))}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-600 border border-dashed border-gray-300 rounded-full hover:bg-gray-50 hover:text-gray-900"
+                >
+                  <Plus className="h-3 w-3" /> {f.label}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
+      )}
+      {entity.type === STICKY.type && layerTypes.length > 0 && (
+        <p className="text-xs text-gray-500">Choose a type above to add its fields.</p>
       )}
 
       <section>

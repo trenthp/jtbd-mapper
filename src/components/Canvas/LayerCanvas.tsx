@@ -54,7 +54,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
   const { undo, redo } = useHistoryStore()
 
   const layers = useLayerData(layer)
-  const { stageRef, stageScale, viewport, zoomIn, zoomOut, zoomToFit, handleStageDragEnd, handleTouchMove, handleTouchEnd } =
+  const { stageRef, stageScale, viewport, zoomIn, zoomOut, zoomToFit, handleStageDragEnd } =
     useStageViewport(width, height)
   const { copy, paste, duplicate } = useClipboard()
 
@@ -111,6 +111,13 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
     setEditingEntity(entity)
     setEditingPosition(worldToStage(stage, entityCenter(entity)))
   }, [connectionMode.isActive, entities, stageRef, isMobile, setSelectionState, openInspector])
+
+  // Double-click/tap a connection: select it and open its details
+  const openConnection = useCallback((connectionId: string) => {
+    if (connectionMode.isActive) return
+    setSelectionState({ selectedEntities: new Set(), selectedConnections: new Set([connectionId]) })
+    openInspector()
+  }, [connectionMode.isActive, setSelectionState, openInspector])
 
   const handleEntitySave = useCallback(async (entityId: string, updates: Partial<EntityWithRelations>) => {
     try {
@@ -188,8 +195,6 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
         onMouseDown={interactions.handleStageMouseDown}
         onMouseUp={interactions.handleStageMouseUp}
         onMouseMove={interactions.handleStageMouseMove}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         onContextMenu={interactions.handleStageContextMenu}
         style={{ cursor: isPanMode ? 'grab' : currentTool.cursor }}
       >
@@ -238,6 +243,7 @@ export function LayerCanvas({ width, height, layer, onCreateConnection, onNaviga
               onNavigateToEntity={onNavigateToEntity}
               currentLayer={layer}
               onClick={interactions.handleConnectionClick}
+              onDoubleClick={openConnection}
             />
           ))}
 
